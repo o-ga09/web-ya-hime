@@ -1,0 +1,37 @@
+version: "3.9"
+services:
+  db:
+    container_name: db
+    image: mysql:8.0
+    platform: linux/x86_64
+    environment:
+      MYSQL_ROOT_PASSWORD: P@ssw0rd
+      MYSQL_DATABASE: note_app
+      MYSQL_USER: user
+      MYSQL_PASSWORD: P@ssw0rd
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db/conf.d/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./db/sql:/docker-entrypoint-initdb.d
+  app:
+    container_name: web-ya-hime-app
+    depends_on:
+      - db
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    environment:
+      ENV: local
+      APP_NAME: web-ya-hime
+      PORT: 8080
+      PROJECT_ID: web-ya-hime
+      DATABASE_URL: user:P@ssw0rd@tcp(db:3306)/develop_tavinikkiy?parseTime=true
+    volumes:
+      - ./:/app
+    ports:
+      - "8080:8080"
+volumes:
+  db_data:
