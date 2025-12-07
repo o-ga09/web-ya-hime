@@ -4,6 +4,9 @@ formatters:
     - goimports
     - gofmt
 
+run:
+  tests: false
+
 linters:
   settings:
     govet:
