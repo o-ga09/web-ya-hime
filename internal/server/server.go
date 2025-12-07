@@ -9,7 +9,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/o-ga09/web-ya-hime/internal/handler/summary"
+	"github.com/o-ga09/web-ya-hime/internal/handler/user"
+	"github.com/o-ga09/web-ya-hime/internal/infra/database/mysql"
 	Ctx "github.com/o-ga09/web-ya-hime/pkg/context"
+	"github.com/o-ga09/web-ya-hime/pkg/httputil"
 	"github.com/o-ga09/web-ya-hime/pkg/logger"
 )
 
@@ -17,18 +21,53 @@ type IServer interface {
 	Run(ctx context.Context) error
 }
 
-type server struct{}
+type server struct {
+	user    user.IUserHandler
+	summary summary.ISummaryHandler
+}
 
 func NewServer(ctx context.Context) IServer {
-	return &server{}
+	summaryRepo := mysql.NewSummaryRepository()
+	userRepo := mysql.NewUserRepository()
+	return &server{
+		user:    user.New(userRepo),
+		summary: summary.New(summaryRepo),
+	}
 }
 
 func (s *server) Run(ctx context.Context) error {
 	cfg := Ctx.GetCtxCfg(ctx)
 	engine := http.NewServeMux()
-	engine.HandleFunc("/health", healthCheck)
 
-	// サーバーの起動
+	// ヘルスチェックAPI
+	healthCheckHandler := UseMiddleware(ctx, healthCheck)
+	DBHealthCheckHandler := UseMiddleware(ctx, DBHealthCheck)
+
+	engine.HandleFunc("/health", healthCheckHandler)
+	engine.HandleFunc("/db-health", DBHealthCheckHandler)
+
+	// ユーザーAPI
+	userSaveHandler := UseMiddleware(ctx, s.user.Save)
+	userListHandler := UseMiddleware(ctx, s.user.List)
+	userDetailHandler := UseMiddleware(ctx, s.user.Detail)
+	userDeleteHandler := UseMiddleware(ctx, s.user.Delete)
+
+	engine.HandleFunc("POST /users", userSaveHandler)
+	engine.HandleFunc("GET /users", userListHandler)
+	engine.HandleFunc("GET /users/{id}", userDetailHandler)
+	engine.HandleFunc("DELETE /users/{id}", userDeleteHandler)
+
+	// 概要欄取得API
+	summarySaveHandler := UseMiddleware(ctx, s.summary.Save)
+	summaryListHandler := UseMiddleware(ctx, s.summary.List)
+	summaryDetailHandler := UseMiddleware(ctx, s.summary.Detail)
+	summaryDeleteHandler := UseMiddleware(ctx, s.summary.Delete)
+
+	engine.HandleFunc("POST /summaries", summarySaveHandler)
+	engine.HandleFunc("GET /summaries", summaryListHandler)
+	engine.HandleFunc("GET /summaries/{id}", summaryDetailHandler)
+	engine.HandleFunc("DELETE /summaries/{id}", summaryDeleteHandler)
+
 	port := fmt.Sprintf(":%s", cfg.Port)
 	srv := &http.Server{
 		Addr:    port,
@@ -62,6 +101,21 @@ func (s *server) Run(ctx context.Context) error {
 }
 
 func healthCheck(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
+	httputil.Response(&w, http.StatusOK, map[string]string{"message": "OK"})
+}
+
+func DBHealthCheck(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	db := Ctx.GetDB(ctx)
+	if db == nil {
+		http.Error(w, "Database connection not found", http.StatusInternalServerError)
+		return
+	}
+
+	if err := db.PingContext(ctx); err != nil {
+		http.Error(w, "Database connection error", http.StatusInternalServerError)
+		return
+	}
+
+	httputil.Response(&w, http.StatusOK, map[string]string{"message": "Database connection is healthy"})
 }

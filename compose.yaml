@@ -28,7 +28,7 @@ services:
       APP_NAME: web-ya-hime
       PORT: 8080
       PROJECT_ID: web-ya-hime
-      DATABASE_URL: user:P@ssw0rd@tcp(db:3306)/develop_tavinikkiy?parseTime=true
+      DATABASE_URL: user:P@ssw0rd@tcp(db:3306)/develop_web_ya_hime?parseTime=true
     volumes:
       - ./:/app
     ports:
