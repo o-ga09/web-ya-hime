@@ -22,7 +22,7 @@ jobs:
           with:
             golangci_lint_version: v2.4.0
             github_token: ${{ secrets.GITHUB_TOKEN }}
-            workdir: ./backend
+            workdir: .
             golangci_lint_flags: "--timeout=5m --config=./.golangci.yaml ./..."
             fail_on_error: true
             reporter: "github-pr-review"
