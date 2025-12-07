@@ -11,7 +11,14 @@ func Response(w *http.ResponseWriter, status int, message ...interface{}) {
 		return
 	}
 
-	json, err := json.Marshal(message)
+	var data interface{}
+	if len(message) == 1 {
+		data = message[0]
+	} else {
+		data = message
+	}
+
+	json, err := json.Marshal(data)
 	if err != nil {
 		(*w).Header().Set("Content-Type", "application/json")
 		(*w).WriteHeader(http.StatusInternalServerError)

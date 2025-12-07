@@ -1,0 +1,50 @@
+package request
+
+import (
+	"github.com/o-ga09/web-ya-hime/internal/domain"
+	"github.com/o-ga09/web-ya-hime/internal/domain/summary"
+	"github.com/o-ga09/web-ya-hime/pkg/ptr"
+	"github.com/o-ga09/web-ya-hime/pkg/uuid"
+)
+
+// SaveSummaryRequest は保存リクエストの構造体
+type SaveSummaryRequest struct {
+	ID          *string `json:"id,omitempty"`
+	Title       string  `json:"title" validate:"required,max=100"`
+	Description string  `json:"description" validate:"max=500"`
+	Content     string  `json:"content" validate:"required"`
+	UserID      string  `json:"user_id"`
+}
+
+// ListSummaryRequest はリスト取得リクエストの構造体
+type ListSummaryRequest struct {
+	Page  int `query:"page" validate:"min=1"`
+	Limit int `query:"limit" validate:"min=1,max=100"`
+}
+
+// DetailSummaryRequest は詳細取得リクエストの構造体
+type DetailSummaryRequest struct {
+	ID string `path:"id" validate:"required"`
+}
+
+// DeleteSummaryRequest は削除リクエストの構造体
+type DeleteSummaryRequest struct {
+	ID string `path:"id" validate:"required"`
+}
+
+func (s *SaveSummaryRequest) ToModel() *summary.Summary {
+	id := uuid.GenerateID()
+	if s.ID != nil {
+		id = ptr.PtrToString(s.ID)
+	}
+
+	return &summary.Summary{
+		WYHBaseModel: domain.WYHBaseModel{
+			ID: id,
+		},
+		Title:       s.Title,
+		Description: s.Description,
+		Content:     s.Content,
+		UserID:      s.UserID,
+	}
+}

@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS summaries (
     title VARCHAR(255) NOT NULL COMMENT 'タイトル',
     description TEXT COMMENT '説明',
     content TEXT NOT NULL COMMENT 'コンテンツ',
-    user_id VARCHAR(36) COMMENT 'ユーザーID',
+    user_id VARCHAR(36) NOT NULL COMMENT 'ユーザーID',
     created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '作成日時',
     updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '更新日時',
     INDEX idx_title (title),

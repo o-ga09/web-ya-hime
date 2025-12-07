@@ -1,8 +1,6 @@
 package summary
 
 import (
-	"encoding/json"
-	"io"
 	"net/http"
 
 	"github.com/o-ga09/web-ya-hime/internal/domain"
@@ -10,6 +8,7 @@ import (
 	"github.com/o-ga09/web-ya-hime/internal/handler/request"
 	"github.com/o-ga09/web-ya-hime/internal/handler/response"
 	"github.com/o-ga09/web-ya-hime/pkg/httputil"
+	"github.com/o-ga09/web-ya-hime/pkg/logger"
 )
 
 type ISummaryHandler interface {
@@ -38,43 +37,30 @@ func (s *summaryHandler) Save(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	// リクエストボディを読み取り
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
-
-	// JSONをリクエスト構造体にデコード
 	var req request.SaveSummaryRequest
-	if err := json.Unmarshal(body, &req); err != nil {
-		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+	if err := request.Bind(r, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	// バリデーション
 	if err := request.Validate(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// ドメインモデルに変換
-	model := &summary.Summary{
-		Title:       req.Title,
-		Description: req.Description,
-		Content:     req.Content,
-		UserID:      req.UserID,
-	}
+	model := req.ToModel()
 
 	// リポジトリに保存
 	if err := s.repo.Save(ctx, model); err != nil {
+		logger.Error(ctx, err.Error())
 		http.Error(w, "Failed to save summary", http.StatusInternalServerError)
 		return
 	}
 
 	// レスポンスを返す
-	httputil.Response(&w, http.StatusCreated)
+	httputil.Response(&w, http.StatusOK, map[string]string{
+		"summary_id": model.ID,
+	})
 }
 
 func (s *summaryHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -89,15 +75,13 @@ func (s *summaryHandler) List(w http.ResponseWriter, r *http.Request) {
 	// リポジトリからリストを取得
 	summaries, err := s.repo.List(ctx)
 	if err != nil {
+		logger.Error(ctx, "error", err)
 		http.Error(w, "Failed to get summary list", http.StatusInternalServerError)
 		return
 	}
 
 	// レスポンスを返す
-	httputil.Response(&w, http.StatusOK, response.ListSummary{
-		Summary: response.ToListSummary(summaries),
-		Total:   len(summaries),
-	})
+	httputil.Response(&w, http.StatusOK, response.ToListSummary(summaries))
 }
 
 func (s *summaryHandler) Detail(w http.ResponseWriter, r *http.Request) {
@@ -109,16 +93,11 @@ func (s *summaryHandler) Detail(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	// クエリパラメータからIDを取得
-	id := r.URL.Query().Get("id")
-	if id == "" {
-		http.Error(w, "ID is required", http.StatusBadRequest)
-		return
-	}
-
+	var req request.DetailSummaryRequest
 	// リクエスト構造体を作成してバリデーション
-	req := request.DetailSummaryRequest{
-		ID: id,
+	if err := request.Bind(r, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 	if err := request.Validate(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -140,9 +119,7 @@ func (s *summaryHandler) Detail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// レスポンスを返す
-	httputil.Response(&w, http.StatusOK, response.DetailSummary{
-		Summary: response.ToSummaryResponse(detail),
-	})
+	httputil.Response(&w, http.StatusOK, response.ToSummaryResponse(detail))
 }
 
 func (s *summaryHandler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -154,22 +131,12 @@ func (s *summaryHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	// リクエストボディを読み取り
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
-
-	// JSONをリクエスト構造体にデコード
 	var req request.DeleteSummaryRequest
-	if err := json.Unmarshal(body, &req); err != nil {
-		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+	// リクエスト構造体を作成してバリデーション
+	if err := request.Bind(r, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	// バリデーション
 	if err := request.Validate(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

@@ -1,8 +1,6 @@
 package user
 
 import (
-	"encoding/json"
-	"io"
 	"net/http"
 
 	"github.com/o-ga09/web-ya-hime/internal/domain"
@@ -37,33 +35,18 @@ func (u *userHandler) Save(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	// リクエストボディを読み取り
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
-
-	// JSONをリクエスト構造体にデコード
 	var req request.SaveUserRequest
-	if err := json.Unmarshal(body, &req); err != nil {
-		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+	if err := request.Bind(r, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	// バリデーション
 	if err := request.Validate(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// ドメインモデルに変換
-	model := &user.User{
-		Name:     req.Name,
-		Email:    req.Email,
-		UserType: req.UserType,
-	}
+	model := req.ToModel()
 
 	// リポジトリに保存
 	if err := u.repo.Save(ctx, model); err != nil {
@@ -72,7 +55,9 @@ func (u *userHandler) Save(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// レスポンスを返す
-	httputil.Response(&w, http.StatusCreated)
+	httputil.Response(&w, http.StatusOK, map[string]string{
+		"user_id": model.ID,
+	})
 }
 
 func (u *userHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -107,16 +92,11 @@ func (u *userHandler) Detail(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	// クエリパラメータからIDを取得
-	id := r.URL.Query().Get("id")
-	if id == "" {
-		http.Error(w, "ID is required", http.StatusBadRequest)
-		return
-	}
-
 	// リクエスト構造体を作成してバリデーション
-	req := request.DetailUserRequest{
-		ID: id,
+	var req request.DetailUserRequest
+	if err := request.Bind(r, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 	if err := request.Validate(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -152,22 +132,12 @@ func (u *userHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	// リクエストボディを読み取り
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
-
-	// JSONをリクエスト構造体にデコード
 	var req request.DeleteUserRequest
-	if err := json.Unmarshal(body, &req); err != nil {
-		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+	// リクエスト構造体を作成してバリデーション
+	if err := request.Bind(r, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	// バリデーション
 	if err := request.Validate(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

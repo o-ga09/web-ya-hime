@@ -12,12 +12,10 @@ type DetailUser struct {
 }
 
 type user struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	Email     string `json:"email"`
-	UserType  string `json:"user_type"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	UserType string `json:"user_type"`
 }
 
 func ToListUser(users []*UserDomain.User) []*user {

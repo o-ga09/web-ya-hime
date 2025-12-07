@@ -55,27 +55,24 @@ func (s *summaryRepository) List(ctx context.Context) (summary.SummarySlice, err
 	var summaries summary.SummarySlice
 	for rows.Next() {
 		var s summary.Summary
-		var userID, userName, userEmail, userType sql.NullString
-		var userCreatedAt, userUpdatedAt sql.NullTime
+		var u user.User
 
 		if err := rows.Scan(
 			&s.ID, &s.Title, &s.Description, &s.Content, &s.UserID, &s.CreatedAt, &s.UpdatedAt,
-			&userID, &userName, &userEmail, &userType, &userCreatedAt, &userUpdatedAt,
+			&u.ID, &u.Name, &u.Email, &u.UserType, &u.CreatedAt, &u.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan summary: %w", err)
 		}
 
-		if userID.Valid {
-			s.User = &user.User{
-				WYHBaseModel: domain.WYHBaseModel{
-					ID:        userID.String,
-					CreatedAt: userCreatedAt.Time,
-					UpdatedAt: userUpdatedAt.Time,
-				},
-				Name:     userName.String,
-				Email:    userEmail.String,
-				UserType: userType.String,
-			}
+		s.User = &user.User{
+			WYHBaseModel: domain.WYHBaseModel{
+				ID:        u.ID,
+				CreatedAt: u.CreatedAt,
+				UpdatedAt: u.UpdatedAt,
+			},
+			Name:     u.Name,
+			Email:    u.Email,
+			UserType: u.UserType,
 		}
 
 		summaries = append(summaries, &s)
