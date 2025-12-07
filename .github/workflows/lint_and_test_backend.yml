@@ -2,11 +2,6 @@ name: Lint and Test
 on:
   workflow_dispatch:
   pull_request:
-    paths:
-      - "backend/**/*.go"
-      - "backend/go.mod"
-      - "backend/go.sum"
-
 
 permissions:
   contents: read
@@ -42,20 +37,10 @@ jobs:
         - name: Set up Go
           uses: actions/setup-go@v2
           with:
-            go-version: 1.24
-
-        - name: Setup DB
-          run: |
-            cd backend
-            make compose-up
-            sleep 30
-            make migrate-up
-            sleep 10
-            make seed    
+            go-version: 1.25
         
         - name: testing
           run: |
-            cd backend
             make test-coverage
 
         - name: create report
