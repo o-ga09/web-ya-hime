@@ -18,7 +18,7 @@ generate:
 # DATABASE_URL is expected to be set in the environment
 ifndef DATABASE_URL
 $(warning DATABASE_URL is not set. Using default local development settings)
-DATABASE_URL ?= user:P@ssw0rd@tcp(127.0.0.1:3306)/develop_tavinikkiy?parseTime=true
+DATABASE_URL ?= user:P@ssw0rd@tcp(127.0.0.1:3306)/develop_web_ya_hime?parseTime=true
 export DATABASE_URL
 endif
 

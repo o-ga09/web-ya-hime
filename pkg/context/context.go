@@ -2,6 +2,7 @@ package context
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 	"github.com/o-ga09/web-ya-hime/pkg/config"
@@ -9,9 +10,11 @@ import (
 
 type CtxUserKey string
 type CtxRequestIDKey string
+type CtxDBKey string
 
 const USERID CtxUserKey = "userID"
 const REQUESTID CtxRequestIDKey = "requestId"
+const DBKEY CtxDBKey = "db"
 
 func GetCtxFromUser(ctx context.Context) string {
 	userID, ok := ctx.Value(USERID).(string)
@@ -46,4 +49,15 @@ func GetCtxCfg(ctx context.Context) *config.Config {
 		return &config.Config{}
 	}
 	return cfg
+}
+
+func SetDB(ctx context.Context, db *sql.DB) context.Context {
+	return context.WithValue(ctx, DBKEY, db)
+}
+
+func GetDB(ctx context.Context) *sql.DB {
+	if db, ok := ctx.Value(DBKEY).(*sql.DB); ok {
+		return db
+	}
+	return nil
 }

@@ -2,11 +2,6 @@ name: Lint and Test
 on:
   workflow_dispatch:
   pull_request:
-    paths:
-      - "backend/**/*.go"
-      - "backend/go.mod"
-      - "backend/go.sum"
-
 
 permissions:
   contents: read
@@ -27,7 +22,7 @@ jobs:
           with:
             golangci_lint_version: v2.4.0
             github_token: ${{ secrets.GITHUB_TOKEN }}
-            workdir: ./backend
+            workdir: .
             golangci_lint_flags: "--timeout=5m --config=./.golangci.yaml ./..."
             fail_on_error: true
             reporter: "github-pr-review"
@@ -42,20 +37,10 @@ jobs:
         - name: Set up Go
           uses: actions/setup-go@v2
           with:
-            go-version: 1.24
-
-        - name: Setup DB
-          run: |
-            cd backend
-            make compose-up
-            sleep 30
-            make migrate-up
-            sleep 10
-            make seed    
+            go-version: 1.25.5
         
         - name: testing
           run: |
-            cd backend
             make test-coverage
 
         - name: create report

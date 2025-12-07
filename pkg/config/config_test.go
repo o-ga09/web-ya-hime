@@ -19,7 +19,7 @@ func Test_loadConfig(t *testing.T) {
 			want: &Config{
 				Env:                       "dev",
 				Port:                      "8080",
-				Database_url:              "",
+				Database_url:              "user:P@ssw0rd@tcp(127.0.0.1:3306)/develop_web_ya_hime?parseTime=true",
 				Sentry_DSN:                "",
 				ProjectID:                 "",
 				CLOUDFLARE_R2_ACCOUNT_ID:  "",

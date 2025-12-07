@@ -1,0 +1,446 @@
+openapi: 3.0.3
+info:
+  title: Web屋姫 API
+  description: |
+    Web屋姫のREST APIドキュメント。
+    ユーザー管理とサマリー（概要欄）管理のエンドポイントを提供します。
+  version: 1.0.0
+  contact:
+    name: o-ga09
+    url: https://github.com/o-ga09/web-ya-hime
+
+servers:
+  - url: http://localhost:8080
+    description: ローカル開発環境
+
+tags:
+  - name: health
+    description: ヘルスチェック
+  - name: users
+    description: ユーザー管理
+  - name: summaries
+    description: サマリー（概要欄）管理
+
+paths:
+  /health:
+    get:
+      tags:
+        - health
+      summary: ヘルスチェック
+      description: アプリケーションの稼働状態を確認します
+      operationId: healthCheck
+      responses:
+        '200':
+          description: 正常稼働中
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /db-health:
+    get:
+      tags:
+        - health
+      summary: データベースヘルスチェック
+      description: データベース接続の状態を確認します
+      operationId: dbHealthCheck
+      responses:
+        '200':
+          description: データベース接続正常
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /users:
+    post:
+      tags:
+        - users
+      summary: ユーザー作成
+      description: 新しいユーザーを作成します
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveUserRequest'
+      responses:
+        '200':
+          description: ユーザー作成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: string
+                    format: uuid
+                    description: 作成されたユーザーのID
+                    example: "123e4567-e89b-12d3-a456-426614174000"
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags:
+        - users
+      summary: ユーザー一覧取得
+      description: 登録されているすべてのユーザーを取得します
+      operationId: listUsers
+      responses:
+        '200':
+          description: ユーザー一覧取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListUserResponse'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/{id}:
+    get:
+      tags:
+        - users
+      summary: ユーザー詳細取得
+      description: 指定されたIDのユーザー詳細情報を取得します
+      operationId: getUserDetail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ユーザーID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: ユーザー詳細取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailUserResponse'
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - users
+      summary: ユーザー削除
+      description: 指定されたIDのユーザーを削除します
+      operationId: deleteUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ユーザーID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: ユーザー削除成功
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /summaries:
+    post:
+      tags:
+        - summaries
+      summary: サマリー作成
+      description: 新しいサマリー（概要欄）を作成します
+      operationId: createSummary
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveSummaryRequest'
+      responses:
+        '200':
+          description: サマリー作成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary_id:
+                    type: string
+                    format: uuid
+                    description: 作成されたサマリーのID
+                    example: "123e4567-e89b-12d3-a456-426614174001"
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags:
+        - summaries
+      summary: サマリー一覧取得
+      description: 登録されているすべてのサマリーを取得します
+      operationId: listSummaries
+      responses:
+        '200':
+          description: サマリー一覧取得成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DetailSummary'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /summaries/{id}:
+    get:
+      tags:
+        - summaries
+      summary: サマリー詳細取得
+      description: 指定されたIDのサマリー詳細情報を取得します
+      operationId: getSummaryDetail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: サマリーID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: サマリー詳細取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailSummary'
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - summaries
+      summary: サマリー削除
+      description: 指定されたIDのサマリーを削除します
+      operationId: deleteSummary
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: サマリーID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: サマリー削除成功
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    SaveUserRequest:
+      type: object
+      required:
+        - name
+        - email
+        - user_type
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ユーザーID（省略可能。指定しない場合は自動生成されます）
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        name:
+          type: string
+          maxLength: 100
+          description: ユーザー名
+          example: "山田太郎"
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: メールアドレス
+          example: "yamada@example.com"
+        user_type:
+          type: string
+          description: ユーザータイプ
+          example: "admin"
+
+    ListUserResponse:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        total:
+          type: integer
+          description: ユーザーの総数
+          example: 10
+
+    DetailUserResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ユーザーID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        name:
+          type: string
+          description: ユーザー名
+          example: "山田太郎"
+        email:
+          type: string
+          format: email
+          description: メールアドレス
+          example: "yamada@example.com"
+        user_type:
+          type: string
+          description: ユーザータイプ
+          example: "admin"
+
+    SaveSummaryRequest:
+      type: object
+      required:
+        - title
+        - content
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: サマリーID（省略可能。指定しない場合は自動生成されます）
+          example: "123e4567-e89b-12d3-a456-426614174001"
+        title:
+          type: string
+          maxLength: 255
+          description: タイトル
+          example: "プロジェクト概要"
+        description:
+          type: string
+          maxLength: 5000
+          description: 説明
+          example: "このプロジェクトの概要を記載します"
+        content:
+          type: string
+          description: コンテンツ本文
+          example: "詳細な内容がここに入ります。"
+        user_id:
+          type: string
+          format: uuid
+          description: 作成者のユーザーID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+
+    DetailSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: サマリーID
+          example: "123e4567-e89b-12d3-a456-426614174001"
+        user:
+          $ref: '#/components/schemas/User'
+          nullable: true
+        content:
+          type: string
+          description: コンテンツ本文
+          example: "詳細な内容がここに入ります。"
+        created_at:
+          type: string
+          format: date-time
+          description: 作成日時
+          example: "2025-12-07 10:30:00"
+        updated_at:
+          type: string
+          format: date-time
+          description: 更新日時
+          example: "2025-12-07 10:30:00"
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          description: エラーメッセージ
+          example: "Invalid request parameters"
