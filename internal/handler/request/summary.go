@@ -10,8 +10,8 @@ import (
 // SaveSummaryRequest は保存リクエストの構造体
 type SaveSummaryRequest struct {
 	ID          *string `json:"id,omitempty"`
-	Title       string  `json:"title" validate:"required,max=100"`
-	Description string  `json:"description" validate:"max=500"`
+	Title       string  `json:"title" validate:"required,max=255"`
+	Description string  `json:"description" validate:"max=5000"`
 	Content     string  `json:"content" validate:"required"`
 	UserID      string  `json:"user_id"`
 }
