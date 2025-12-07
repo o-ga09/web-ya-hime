@@ -182,7 +182,11 @@ func Cors(next http.HandlerFunc) http.HandlerFunc {
 
 func Csrf(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// CSRF対策の処理をここに実装
+		cop := http.NewCrossOriginProtection()
+		if err := cop.Check(r); err != nil {
+			http.Error(w, err.Error(), http.StatusForbidden)
+			return
+		}
 		next.ServeHTTP(w, r)
 	})
 }
