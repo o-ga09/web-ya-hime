@@ -37,7 +37,7 @@ func TestSummaryRepository_Save(t *testing.T) {
 			},
 			mockFn: func(mock sqlmock.Sqlmock) {
 				mock.ExpectExec("INSERT INTO summaries").
-					WithArgs("test-id-1", "Test Title", "Test Description", "Test Content", "\u96d1\u8ac7", sqlmock.AnyArg(), sqlmock.AnyArg(), "user-id-1").
+					WithArgs("test-id-1", "Test Title", "Test Description", "Test Content", sqlmock.AnyArg(), sqlmock.AnyArg(), "user-id-1").
 					WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 			wantErr: false,
@@ -70,7 +70,7 @@ func TestSummaryRepository_Save(t *testing.T) {
 			},
 			mockFn: func(mock sqlmock.Sqlmock) {
 				mock.ExpectExec("INSERT INTO summaries").
-					WithArgs("test-id-3", "Test Title", "Test Description", "Test Content", "\u96d1\u8ac7", sqlmock.AnyArg(), sqlmock.AnyArg(), "user-id-1").
+					WithArgs("test-id-3", "Test Title", "Test Description", "Test Content", sqlmock.AnyArg(), sqlmock.AnyArg(), "user-id-1").
 					WillReturnError(fmt.Errorf("db error"))
 			},
 			wantErr: true,
@@ -127,16 +127,16 @@ func TestSummaryRepository_List(t *testing.T) {
 
 				// SELECT query
 				rows := sqlmock.NewRows([]string{
-					"id", "title", "description", "content", "category", "category_id", "subcategory_id", "user_id", "created_at", "updated_at",
+					"id", "title", "description", "content", "category_id", "subcategory_id", "user_id", "created_at", "updated_at",
 					"id", "name", "email", "user_type", "created_at", "updated_at",
 					"id", "name", "created_at", "updated_at",
 					"id", "category_id", "name", "created_at", "updated_at",
 				}).
-					AddRow("summary-1", "Title 1", "Description 1", "Content 1", "\u96d1\u8ac7", nil, nil, "user-1", now, now,
+					AddRow("summary-1", "Title 1", "Description 1", "Content 1", nil, nil, "user-1", now, now,
 						"user-1", "User Name 1", "user1@example.com", "admin", now, now,
 						nil, nil, nil, nil,
 						nil, nil, nil, nil, nil).
-					AddRow("summary-2", "Title 2", "Description 2", "Content 2", "\u96d1\u8ac7", nil, nil, "user-2", now, now,
+					AddRow("summary-2", "Title 2", "Description 2", "Content 2", nil, nil, "user-2", now, now,
 						"user-2", "User Name 2", "user2@example.com", "user", now, now,
 						nil, nil, nil, nil,
 						nil, nil, nil, nil, nil)
@@ -155,7 +155,7 @@ func TestSummaryRepository_List(t *testing.T) {
 				mock.ExpectQuery("SELECT COUNT").WillReturnRows(countRows)
 
 				rows := sqlmock.NewRows([]string{
-					"id", "title", "description", "content", "category", "category_id", "subcategory_id", "user_id", "created_at", "updated_at",
+					"id", "title", "description", "content", "category_id", "subcategory_id", "user_id", "created_at", "updated_at",
 					"id", "name", "email", "user_type", "created_at", "updated_at",
 					"id", "name", "created_at", "updated_at",
 					"id", "category_id", "name", "created_at", "updated_at",
@@ -240,14 +240,14 @@ func TestSummaryRepository_Detail(t *testing.T) {
 			},
 			mockFn: func(mock sqlmock.Sqlmock) {
 				rows := sqlmock.NewRows([]string{
-					"id", "title", "description", "content", "category", "category_id", "subcategory_id", "user_id", "created_at", "updated_at",
+					"id", "title", "description", "content", "category_id", "subcategory_id", "user_id", "created_at", "updated_at",
 					"id", "name", "email", "user_type", "created_at", "updated_at",
 					"id", "name", "created_at", "updated_at",
 					"id", "category_id", "name", "created_at", "updated_at",
 				}).
-					AddRow("summary-1", "Title 1", "Description 1", "Content 1", "雑談", nil, nil, "user-1", now, now,
+					AddRow("summary-1", "Title 1", "Description 1", "Content 1", nil, nil, "user-1", now, now,
 						"user-1", "User Name 1", "user1@example.com", "admin", now, now,
-						nil, nil, nil, nil,
+						"cat-1", "雑談", now, now,
 						nil, nil, nil, nil, nil)
 
 				mock.ExpectQuery("SELECT (.+) FROM summaries (.+) WHERE s.id = (.+) AND s.deleted_at IS NULL").
@@ -261,7 +261,8 @@ func TestSummaryRepository_Detail(t *testing.T) {
 				assert.Equal(t, "Title 1", result.Title)
 				assert.Equal(t, "Description 1", result.Description)
 				assert.Equal(t, "Content 1", result.Content)
-				assert.Equal(t, sql.NullString{String: "雑談", Valid: true}, result.Category)
+				assert.NotNil(t, result.Category)
+				assert.Equal(t, "雑談", result.Category.Name)
 				assert.NotNil(t, result.User)
 				assert.Equal(t, "user-1", result.User.ID)
 				assert.Equal(t, "User Name 1", result.User.Name)
