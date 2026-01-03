@@ -3,6 +3,7 @@ package request
 import (
 	"github.com/o-ga09/web-ya-hime/internal/domain"
 	"github.com/o-ga09/web-ya-hime/internal/domain/summary"
+	nullvalue "github.com/o-ga09/web-ya-hime/pkg/null_value"
 	"github.com/o-ga09/web-ya-hime/pkg/ptr"
 	"github.com/o-ga09/web-ya-hime/pkg/uuid"
 )
@@ -13,15 +14,15 @@ type SaveSummaryRequest struct {
 	Title       string  `json:"title" validate:"required,max=255"`
 	Description string  `json:"description" validate:"max=5000"`
 	Content     string  `json:"content" validate:"required"`
-	Category    string  `json:"category" validate:"required,max=100"`
+	Category    *string `json:"category" validate:"omitempty,max=100"`
 	UserID      string  `json:"user_id"`
 }
 
 // ListSummaryRequest はリスト取得リクエストの構造体
 type ListSummaryRequest struct {
-	Category string `query:"category"`
-	Limit    int    `query:"limit" validate:"min=1,max=100"`
-	Offset   int    `query:"offset" validate:"min=0"`
+	Category *string `query:"category"`
+	Limit    int     `query:"limit" validate:"min=1,max=100"`
+	Offset   int     `query:"offset" validate:"min=0"`
 }
 
 // DetailSummaryRequest は詳細取得リクエストの構造体
@@ -47,7 +48,7 @@ func (s *SaveSummaryRequest) ToModel() *summary.Summary {
 		Title:       s.Title,
 		Description: s.Description,
 		Content:     s.Content,
-		Category:    s.Category,
+		Category:    nullvalue.PointerToSqlString(s.Category),
 		UserID:      s.UserID,
 	}
 }

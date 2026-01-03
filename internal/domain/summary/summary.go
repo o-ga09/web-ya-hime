@@ -2,6 +2,7 @@ package summary
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/o-ga09/web-ya-hime/internal/domain"
 	"github.com/o-ga09/web-ya-hime/internal/domain/user"
@@ -30,12 +31,12 @@ type ListResult struct {
 
 type Summary struct {
 	domain.WYHBaseModel
-	Title       string     `json:"title"`
-	Description string     `json:"description"`
-	Content     string     `json:"content"`
-	Category    string     `json:"category"`
-	UserID      string     `json:"user_id"`
-	User        *user.User `json:"user"`
+	Title       string         `json:"title"`
+	Description string         `json:"description"`
+	Content     string         `json:"content"`
+	Category    sql.NullString `json:"category"`
+	UserID      string         `json:"user_id"`
+	User        *user.User     `json:"user"`
 }
 
 type SummarySlice []*Summary

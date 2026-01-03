@@ -3,6 +3,7 @@ package summary
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -170,7 +171,7 @@ func TestSummaryHandler_List(t *testing.T) {
 						Title:       "Title 1",
 						Description: "Description 1",
 						Content:     "Content 1",
-						Category:    "雑談",
+						Category:    sql.NullString{String: "雑談", Valid: true},
 						UserID:      "user-1",
 						User: &user.User{
 							WYHBaseModel: domain.WYHBaseModel{

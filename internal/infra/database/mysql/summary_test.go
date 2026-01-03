@@ -11,6 +11,7 @@ import (
 	"github.com/o-ga09/web-ya-hime/internal/domain"
 	"github.com/o-ga09/web-ya-hime/internal/domain/summary"
 	Ctx "github.com/o-ga09/web-ya-hime/pkg/context"
+	nullvalue "github.com/o-ga09/web-ya-hime/pkg/null_value"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,7 +34,7 @@ func TestSummaryRepository_Save(t *testing.T) {
 				Title:       "Test Title",
 				Description: "Test Description",
 				Content:     "Test Content",
-				Category:    "雑談",
+				Category:    nullvalue.StringToSqlString("雑談"),
 				UserID:      "user-id-1",
 			},
 			mockFn: func(mock sqlmock.Sqlmock) {
@@ -52,7 +53,7 @@ func TestSummaryRepository_Save(t *testing.T) {
 				Title:       "Test Title",
 				Description: "Test Description",
 				Content:     "Test Content",
-				Category:    "雑談",
+				Category:    nullvalue.StringToSqlString("雑談"),
 				UserID:      "user-id-1",
 			},
 			mockFn:  func(mock sqlmock.Sqlmock) {},
@@ -68,7 +69,7 @@ func TestSummaryRepository_Save(t *testing.T) {
 				Title:       "Test Title",
 				Description: "Test Description",
 				Content:     "Test Content",
-				Category:    "雑談",
+				Category:    nullvalue.StringToSqlString("雑談"),
 				UserID:      "user-id-1",
 			},
 			mockFn: func(mock sqlmock.Sqlmock) {
@@ -127,7 +128,7 @@ func TestSummaryRepository_List(t *testing.T) {
 				// COUNT query
 				countRows := sqlmock.NewRows([]string{"count"}).AddRow(2)
 				mock.ExpectQuery("SELECT COUNT").WillReturnRows(countRows)
-				
+
 				// SELECT query
 				rows := sqlmock.NewRows([]string{
 					"id", "title", "description", "content", "category", "user_id", "created_at", "updated_at",
@@ -150,7 +151,7 @@ func TestSummaryRepository_List(t *testing.T) {
 			mockFn: func(mock sqlmock.Sqlmock) {
 				countRows := sqlmock.NewRows([]string{"count"}).AddRow(0)
 				mock.ExpectQuery("SELECT COUNT").WillReturnRows(countRows)
-				
+
 				rows := sqlmock.NewRows([]string{
 					"id", "title", "description", "content", "category", "user_id", "created_at", "updated_at",
 					"id", "name", "email", "user_type", "created_at", "updated_at",
@@ -174,7 +175,7 @@ func TestSummaryRepository_List(t *testing.T) {
 			mockFn: func(mock sqlmock.Sqlmock) {
 				countRows := sqlmock.NewRows([]string{"count"}).AddRow(1)
 				mock.ExpectQuery("SELECT COUNT").WillReturnRows(countRows)
-				
+
 				mock.ExpectQuery("SELECT (.+) FROM summaries").
 					WillReturnError(fmt.Errorf("query error"))
 			},
@@ -252,7 +253,7 @@ func TestSummaryRepository_Detail(t *testing.T) {
 				assert.Equal(t, "Title 1", result.Title)
 				assert.Equal(t, "Description 1", result.Description)
 				assert.Equal(t, "Content 1", result.Content)
-				assert.Equal(t, "雑談", result.Category)
+				assert.Equal(t, sql.NullString{String: "雑談", Valid: true}, result.Category)
 				assert.NotNil(t, result.User)
 				assert.Equal(t, "user-1", result.User.ID)
 				assert.Equal(t, "User Name 1", result.User.Name)

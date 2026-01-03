@@ -9,6 +9,7 @@ import (
 	"github.com/o-ga09/web-ya-hime/internal/handler/response"
 	"github.com/o-ga09/web-ya-hime/pkg/httputil"
 	"github.com/o-ga09/web-ya-hime/pkg/logger"
+	"github.com/o-ga09/web-ya-hime/pkg/ptr"
 )
 
 type ISummaryHandler interface {
@@ -90,8 +91,10 @@ func (s *summaryHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// リポジトリからリストを取得
+	category := ptr.PtrToString(req.Category)
+
 	opts := summary.ListOptions{
-		Category: req.Category,
+		Category: category,
 		Limit:    req.Limit,
 		Offset:   req.Offset,
 	}
