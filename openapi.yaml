@@ -20,6 +20,10 @@ tags:
     description: ユーザー管理
   - name: summaries
     description: サマリー（概要欄）管理
+  - name: categories
+    description: カテゴリ管理
+  - name: subcategories
+    description: サブカテゴリ管理
 
 paths:
   /health:
@@ -239,6 +243,23 @@ paths:
           schema:
             type: string
             example: "雑談"
+        - name: category_id
+          in: query
+          required: false
+          description: 'カテゴリIDで絞り込み'
+          schema:
+            type: string
+            format: uuid
+        - name: subcategory_id
+          in: query
+          required: false
+          description: |
+            サブカテゴリIDで絞り込み。
+            subcategory_idのみ指定した場合、親カテゴリIDは自動で補完されます。
+            category_idとsubcategory_idを両方指定した場合、組み合わせが正しいかバリデーションされます。
+          schema:
+            type: string
+            format: uuid
         - name: limit
           in: query
           required: false
@@ -328,8 +349,264 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        '204':
           description: サマリー削除成功
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /categories:
+    post:
+      tags:
+        - categories
+      summary: カテゴリ作成
+      description: 新しいカテゴリを作成します
+      operationId: createCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveCategoryRequest'
+      responses:
+        '200':
+          description: カテゴリ作成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  category_id:
+                    type: string
+                    format: uuid
+                    description: 作成されたカテゴリのID
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags:
+        - categories
+      summary: カテゴリ一覧取得
+      description: 登録されているすべてのカテゴリを取得します
+      operationId: listCategories
+      responses:
+        '200':
+          description: カテゴリ一覧取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCategoryResponse'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /categories/{id}:
+    get:
+      tags:
+        - categories
+      summary: カテゴリ詳細取得
+      description: 指定されたIDのカテゴリ詳細情報を取得します
+      operationId: getCategoryDetail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: カテゴリID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: カテゴリ詳細取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailCategoryResponse'
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - categories
+      summary: カテゴリ削除
+      description: 指定されたIDのカテゴリを削除します
+      operationId: deleteCategory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: カテゴリID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: カテゴリ削除成功
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /subcategories:
+    post:
+      tags:
+        - subcategories
+      summary: サブカテゴリ作成
+      description: 新しいサブカテゴリを作成します
+      operationId: createSubcategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveSubcategoryRequest'
+      responses:
+        '200':
+          description: サブカテゴリ作成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subcategory_id:
+                    type: string
+                    format: uuid
+                    description: 作成されたサブカテゴリのID
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags:
+        - subcategories
+      summary: サブカテゴリ一覧取得
+      description: |
+        登録されているサブカテゴリを取得します。
+        カテゴリIDを指定することで、そのカテゴリに属するサブカテゴリのみを取得できます。
+      operationId: listSubcategories
+      parameters:
+        - name: category_id
+          in: query
+          required: false
+          description: カテゴリID（指定すると、そのカテゴリに属するサブカテゴリのみを取得）
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: サブカテゴリ一覧取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListSubcategoryResponse'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /subcategories/{id}:
+    get:
+      tags:
+        - subcategories
+      summary: サブカテゴリ詳細取得
+      description: 指定されたIDのサブカテゴリ詳細情報を取得します
+      operationId: getSubcategoryDetail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: サブカテゴリID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: サブカテゴリ詳細取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailSubcategoryResponse'
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - subcategories
+      summary: サブカテゴリ削除
+      description: 指定されたIDのサブカテゴリを削除します
+      operationId: deleteSubcategory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: サブカテゴリID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: サブカテゴリ削除成功
         '400':
           description: バリデーションエラー
           content:
@@ -442,8 +719,21 @@ components:
         category:
           type: string
           maxLength: 100
-          description: 'カテゴリ（例: 雑談、ゲーム（スプラ）、ゲーム（APEX）など）'
+          description: 'カテゴリ（例: 雑談、ゲーム（スプラ）、ゲーム（APEX）など）※後方互換性のため残存'
           example: "雑談"
+        category_id:
+          type: string
+          format: uuid
+          description: カテゴリID
+          nullable: true
+        subcategory_id:
+          type: string
+          format: uuid
+          description: |
+            サブカテゴリID。
+            subcategory_idのみ指定した場合、親カテゴリIDは自動で補完されます。
+            category_idとsubcategory_idを両方指定した場合、組み合わせが正しいかバリデーションされます。
+          nullable: true
         user_id:
           type: string
           format: uuid
@@ -475,8 +765,17 @@ components:
           example: "詳細な内容がここに入ります。"
         category:
           type: string
-          description: カテゴリ
+          description: カテゴリ（後方互換性のため残存）
+          nullable: true
           example: "雑談"
+        category_obj:
+          $ref: '#/components/schemas/Category'
+          description: カテゴリオブジェクト
+          nullable: true
+        subcategory:
+          $ref: '#/components/schemas/Subcategory'
+          description: サブカテゴリオブジェクト
+          nullable: true
         created_at:
           type: string
           format: date-time
@@ -512,6 +811,123 @@ components:
           type: boolean
           description: 次のページが存在するかどうか
           example: true
+
+    SaveCategoryRequest:
+      type: object
+      required:
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: カテゴリID（省略可能。指定しない場合は自動生成されます）
+        name:
+          type: string
+          maxLength: 100
+          description: カテゴリ名
+          example: "ゲーム"
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: カテゴリID
+        name:
+          type: string
+          description: カテゴリ名
+          example: "ゲーム"
+        created_at:
+          type: string
+          format: date-time
+          description: 作成日時
+        updated_at:
+          type: string
+          format: date-time
+          description: 更新日時
+
+    ListCategoryResponse:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+        total:
+          type: integer
+          description: カテゴリの総数
+
+    DetailCategoryResponse:
+      type: object
+      properties:
+        category:
+          $ref: '#/components/schemas/Category'
+
+    SaveSubcategoryRequest:
+      type: object
+      required:
+        - category_id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: サブカテゴリID（省略可能。指定しない場合は自動生成されます）
+        category_id:
+          type: string
+          format: uuid
+          description: 親カテゴリID
+        name:
+          type: string
+          maxLength: 100
+          description: サブカテゴリ名
+          example: "スプラトゥーン"
+
+    Subcategory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: サブカテゴリID
+        category_id:
+          type: string
+          format: uuid
+          description: 親カテゴリID
+        category_name:
+          type: string
+          description: 親カテゴリ名
+          example: "ゲーム"
+        name:
+          type: string
+          description: サブカテゴリ名
+          example: "スプラトゥーン"
+        created_at:
+          type: string
+          format: date-time
+          description: 作成日時
+        updated_at:
+          type: string
+          format: date-time
+          description: 更新日時
+
+    ListSubcategoryResponse:
+      type: object
+      properties:
+        subcategories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Subcategory'
+        total:
+          type: integer
+          description: サブカテゴリの総数
+
+    DetailSubcategoryResponse:
+      type: object
+      properties:
+        subcategory:
+          $ref: '#/components/schemas/Subcategory'
 
     Error:
       type: object

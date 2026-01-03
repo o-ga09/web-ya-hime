@@ -9,6 +9,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/o-ga09/web-ya-hime/internal/handler/category"
+	"github.com/o-ga09/web-ya-hime/internal/handler/subcategory"
 	"github.com/o-ga09/web-ya-hime/internal/handler/summary"
 	"github.com/o-ga09/web-ya-hime/internal/handler/user"
 	"github.com/o-ga09/web-ya-hime/internal/infra/database/mysql"
@@ -22,16 +24,22 @@ type IServer interface {
 }
 
 type server struct {
-	user    user.IUserHandler
-	summary summary.ISummaryHandler
+	user        user.IUserHandler
+	summary     summary.ISummaryHandler
+	category    category.ICategoryHandler
+	subcategory subcategory.ISubcategoryHandler
 }
 
 func NewServer(ctx context.Context) IServer {
 	summaryRepo := mysql.NewSummaryRepository()
 	userRepo := mysql.NewUserRepository()
+	categoryRepo := mysql.NewCategoryRepository()
+	subcategoryRepo := mysql.NewSubcategoryRepository()
 	return &server{
-		user:    user.New(userRepo),
-		summary: summary.New(summaryRepo),
+		user:        user.New(userRepo),
+		summary:     summary.New(summaryRepo, subcategoryRepo),
+		category:    category.New(categoryRepo),
+		subcategory: subcategory.New(subcategoryRepo),
 	}
 }
 
@@ -67,6 +75,28 @@ func (s *server) Run(ctx context.Context) error {
 	engine.HandleFunc("GET /summaries", summaryListHandler)
 	engine.HandleFunc("GET /summaries/{id}", summaryDetailHandler)
 	engine.HandleFunc("DELETE /summaries/{id}", summaryDeleteHandler)
+
+	// カテゴリAPI
+	categorySaveHandler := UseMiddleware(ctx, s.category.Save)
+	categoryListHandler := UseMiddleware(ctx, s.category.List)
+	categoryDetailHandler := UseMiddleware(ctx, s.category.Detail)
+	categoryDeleteHandler := UseMiddleware(ctx, s.category.Delete)
+
+	engine.HandleFunc("POST /categories", categorySaveHandler)
+	engine.HandleFunc("GET /categories", categoryListHandler)
+	engine.HandleFunc("GET /categories/{id}", categoryDetailHandler)
+	engine.HandleFunc("DELETE /categories/{id}", categoryDeleteHandler)
+
+	// サブカテゴリAPI
+	subcategorySaveHandler := UseMiddleware(ctx, s.subcategory.Save)
+	subcategoryListHandler := UseMiddleware(ctx, s.subcategory.List)
+	subcategoryDetailHandler := UseMiddleware(ctx, s.subcategory.Detail)
+	subcategoryDeleteHandler := UseMiddleware(ctx, s.subcategory.Delete)
+
+	engine.HandleFunc("POST /subcategories", subcategorySaveHandler)
+	engine.HandleFunc("GET /subcategories", subcategoryListHandler)
+	engine.HandleFunc("GET /subcategories/{id}", subcategoryDetailHandler)
+	engine.HandleFunc("DELETE /subcategories/{id}", subcategoryDeleteHandler)
 
 	port := fmt.Sprintf(":%s", cfg.Port)
 	srv := &http.Server{

@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"github.com/o-ga09/web-ya-hime/internal/domain"
+	"github.com/o-ga09/web-ya-hime/internal/domain/category"
+	"github.com/o-ga09/web-ya-hime/internal/domain/subcategory"
 	"github.com/o-ga09/web-ya-hime/internal/domain/summary"
 	"github.com/o-ga09/web-ya-hime/internal/domain/user"
 	Ctx "github.com/o-ga09/web-ya-hime/pkg/context"
@@ -23,8 +25,8 @@ func (s *summaryRepository) Save(ctx context.Context, model *summary.Summary) er
 		return fmt.Errorf("database connection not found in context")
 	}
 
-	query := `INSERT INTO summaries (id, title, description, content, category, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`
-	_, err := db.ExecContext(ctx, query, model.ID, model.Title, model.Description, model.Content, model.Category, model.UserID)
+	query := `INSERT INTO summaries (id, title, description, content, category, category_id, subcategory_id, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`
+	_, err := db.ExecContext(ctx, query, model.ID, model.Title, model.Description, model.Content, model.Category, model.CategoryID, model.SubcategoryID, model.UserID)
 	if err != nil {
 		return fmt.Errorf("failed to save summary: %w", err)
 	}
@@ -53,6 +55,14 @@ func (s *summaryRepository) List(ctx context.Context, opts summary.ListOptions) 
 		whereClause += " AND s.category = ?"
 		args = append(args, opts.Category)
 	}
+	if opts.CategoryID != "" {
+		whereClause += " AND s.category_id = ?"
+		args = append(args, opts.CategoryID)
+	}
+	if opts.SubcategoryID != "" {
+		whereClause += " AND s.subcategory_id = ?"
+		args = append(args, opts.SubcategoryID)
+	}
 
 	// 総件数を取得
 	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM summaries s %s`, whereClause)
@@ -64,10 +74,14 @@ func (s *summaryRepository) List(ctx context.Context, opts summary.ListOptions) 
 	// データ取得
 	query := fmt.Sprintf(`
 		SELECT 
-			s.id, s.title, s.description, s.content, s.category, s.user_id, s.created_at, s.updated_at,
-			u.id, u.name, u.email, u.user_type, u.created_at, u.updated_at
+			s.id, s.title, s.description, s.content, s.category, s.category_id, s.subcategory_id, s.user_id, s.created_at, s.updated_at,
+			u.id, u.name, u.email, u.user_type, u.created_at, u.updated_at,
+			c.id, c.name, c.created_at, c.updated_at,
+			sc.id, sc.category_id, sc.name, sc.created_at, sc.updated_at
 		FROM summaries s
 		LEFT JOIN users u ON s.user_id = u.id AND u.deleted_at IS NULL
+		LEFT JOIN categories c ON s.category_id = c.id
+		LEFT JOIN subcategories sc ON s.subcategory_id = sc.id
 		%s
 		ORDER BY s.created_at DESC
 		LIMIT ? OFFSET ?
@@ -84,10 +98,16 @@ func (s *summaryRepository) List(ctx context.Context, opts summary.ListOptions) 
 	for rows.Next() {
 		var s summary.Summary
 		var u user.User
+		var catID, catName sql.NullString
+		var catCreatedAt, catUpdatedAt sql.NullTime
+		var subID, subCategoryID, subName sql.NullString
+		var subCreatedAt, subUpdatedAt sql.NullTime
 
 		if err := rows.Scan(
-			&s.ID, &s.Title, &s.Description, &s.Content, &s.Category, &s.UserID, &s.CreatedAt, &s.UpdatedAt,
+			&s.ID, &s.Title, &s.Description, &s.Content, &s.Category, &s.CategoryID, &s.SubcategoryID, &s.UserID, &s.CreatedAt, &s.UpdatedAt,
 			&u.ID, &u.Name, &u.Email, &u.UserType, &u.CreatedAt, &u.UpdatedAt,
+			&catID, &catName, &catCreatedAt, &catUpdatedAt,
+			&subID, &subCategoryID, &subName, &subCreatedAt, &subUpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan summary: %w", err)
 		}
@@ -101,6 +121,29 @@ func (s *summaryRepository) List(ctx context.Context, opts summary.ListOptions) 
 			Name:     u.Name,
 			Email:    u.Email,
 			UserType: u.UserType,
+		}
+
+		if catID.Valid {
+			s.CategoryObj = &category.Category{
+				WYHBaseModel: domain.WYHBaseModel{
+					ID:        catID.String,
+					CreatedAt: catCreatedAt.Time,
+					UpdatedAt: catUpdatedAt.Time,
+				},
+				Name: catName.String,
+			}
+		}
+
+		if subID.Valid {
+			s.Subcategory = &subcategory.Subcategory{
+				WYHBaseModel: domain.WYHBaseModel{
+					ID:        subID.String,
+					CreatedAt: subCreatedAt.Time,
+					UpdatedAt: subUpdatedAt.Time,
+				},
+				CategoryID: subCategoryID.String,
+				Name:       subName.String,
+			}
 		}
 
 		summaries = append(summaries, &s)
@@ -133,15 +176,23 @@ func (s *summaryRepository) Detail(ctx context.Context, model *summary.Summary) 
 
 	query := `
 		SELECT 
-			s.id, s.title, s.description, s.content, s.category, s.user_id, s.created_at, s.updated_at,
-			u.id, u.name, u.email, u.user_type, u.created_at, u.updated_at
+			s.id, s.title, s.description, s.content, s.category, s.category_id, s.subcategory_id, s.user_id, s.created_at, s.updated_at,
+			u.id, u.name, u.email, u.user_type, u.created_at, u.updated_at,
+			c.id, c.name, c.created_at, c.updated_at,
+			sc.id, sc.category_id, sc.name, sc.created_at, sc.updated_at
 		FROM summaries s
 		LEFT JOIN users u ON s.user_id = u.id AND u.deleted_at IS NULL
+		LEFT JOIN categories c ON s.category_id = c.id
+		LEFT JOIN subcategories sc ON s.subcategory_id = sc.id
 		WHERE s.id = ? AND s.deleted_at IS NULL
 	`
 	var result summary.Summary
 	var userID, userName, userEmail, userType sql.NullString
 	var userCreatedAt, userUpdatedAt sql.NullTime
+	var catID, catName sql.NullString
+	var catCreatedAt, catUpdatedAt sql.NullTime
+	var subID, subCategoryID, subName sql.NullString
+	var subCreatedAt, subUpdatedAt sql.NullTime
 
 	err := db.QueryRowContext(ctx, query, model.ID).Scan(
 		&result.ID,
@@ -149,6 +200,8 @@ func (s *summaryRepository) Detail(ctx context.Context, model *summary.Summary) 
 		&result.Description,
 		&result.Content,
 		&result.Category,
+		&result.CategoryID,
+		&result.SubcategoryID,
 		&result.UserID,
 		&result.CreatedAt,
 		&result.UpdatedAt,
@@ -158,6 +211,15 @@ func (s *summaryRepository) Detail(ctx context.Context, model *summary.Summary) 
 		&userType,
 		&userCreatedAt,
 		&userUpdatedAt,
+		&catID,
+		&catName,
+		&catCreatedAt,
+		&catUpdatedAt,
+		&subID,
+		&subCategoryID,
+		&subName,
+		&subCreatedAt,
+		&subUpdatedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -176,6 +238,29 @@ func (s *summaryRepository) Detail(ctx context.Context, model *summary.Summary) 
 			Name:     userName.String,
 			Email:    userEmail.String,
 			UserType: userType.String,
+		}
+	}
+
+	if catID.Valid {
+		result.CategoryObj = &category.Category{
+			WYHBaseModel: domain.WYHBaseModel{
+				ID:        catID.String,
+				CreatedAt: catCreatedAt.Time,
+				UpdatedAt: catUpdatedAt.Time,
+			},
+			Name: catName.String,
+		}
+	}
+
+	if subID.Valid {
+		result.Subcategory = &subcategory.Subcategory{
+			WYHBaseModel: domain.WYHBaseModel{
+				ID:        subID.String,
+				CreatedAt: subCreatedAt.Time,
+				UpdatedAt: subUpdatedAt.Time,
+			},
+			CategoryID: subCategoryID.String,
+			Name:       subName.String,
 		}
 	}
 

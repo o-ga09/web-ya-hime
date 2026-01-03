@@ -5,6 +5,8 @@ import (
 	"database/sql"
 
 	"github.com/o-ga09/web-ya-hime/internal/domain"
+	"github.com/o-ga09/web-ya-hime/internal/domain/category"
+	"github.com/o-ga09/web-ya-hime/internal/domain/subcategory"
 	"github.com/o-ga09/web-ya-hime/internal/domain/user"
 )
 
@@ -16,9 +18,11 @@ type ISummaryRepository interface {
 }
 
 type ListOptions struct {
-	Category string
-	Limit    int
-	Offset   int
+	Category      string
+	CategoryID    string
+	SubcategoryID string
+	Limit         int
+	Offset        int
 }
 
 type ListResult struct {
@@ -31,12 +35,16 @@ type ListResult struct {
 
 type Summary struct {
 	domain.WYHBaseModel
-	Title       string         `json:"title"`
-	Description string         `json:"description"`
-	Content     string         `json:"content"`
-	Category    sql.NullString `json:"category"`
-	UserID      string         `json:"user_id"`
-	User        *user.User     `json:"user"`
+	Title         string                   `json:"title"`
+	Description   string                   `json:"description"`
+	Content       string                   `json:"content"`
+	Category      sql.NullString           `json:"category"`
+	CategoryID    sql.NullString           `json:"category_id"`
+	SubcategoryID sql.NullString           `json:"subcategory_id"`
+	UserID        string                   `json:"user_id"`
+	User          *user.User               `json:"user,omitempty"`
+	CategoryObj   *category.Category       `json:"category_obj,omitempty"`
+	Subcategory   *subcategory.Subcategory `json:"subcategory,omitempty"`
 }
 
 type SummarySlice []*Summary
