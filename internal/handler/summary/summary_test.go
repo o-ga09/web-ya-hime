@@ -27,12 +27,12 @@ func (m *MockSummaryRepository) Save(ctx context.Context, model *summary.Summary
 	return args.Error(0)
 }
 
-func (m *MockSummaryRepository) List(ctx context.Context) (summary.SummarySlice, error) {
-	args := m.Called(ctx)
+func (m *MockSummaryRepository) List(ctx context.Context, opts summary.ListOptions) (*summary.ListResult, error) {
+	args := m.Called(ctx, opts)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(summary.SummarySlice), args.Error(1)
+	return args.Get(0).(*summary.ListResult), args.Error(1)
 }
 
 func (m *MockSummaryRepository) Detail(ctx context.Context, model *summary.Summary) (*summary.Summary, error) {
@@ -64,6 +64,7 @@ func TestSummaryHandler_Save(t *testing.T) {
 				"title":       "Test Title",
 				"description": "Test Description",
 				"content":     "Test Content",
+				"category":    "雑談",
 				"user_id":     "user-123",
 			},
 			mockSetup: func(m *MockSummaryRepository) {
@@ -110,6 +111,7 @@ func TestSummaryHandler_Save(t *testing.T) {
 				"title":       "Test Title",
 				"description": "Test Description",
 				"content":     "Test Content",
+				"category":    "雑談",
 				"user_id":     "user-123",
 			},
 			mockSetup: func(m *MockSummaryRepository) {
@@ -168,6 +170,7 @@ func TestSummaryHandler_List(t *testing.T) {
 						Title:       "Title 1",
 						Description: "Description 1",
 						Content:     "Content 1",
+						Category:    "雑談",
 						UserID:      "user-1",
 						User: &user.User{
 							WYHBaseModel: domain.WYHBaseModel{
@@ -181,29 +184,44 @@ func TestSummaryHandler_List(t *testing.T) {
 						},
 					},
 				}
-				m.On("List", mock.Anything).Return(summaries, nil)
+				result := &summary.ListResult{
+					Items:   summaries,
+					Total:   1,
+					Limit:   20,
+					Offset:  0,
+					HasNext: false,
+				}
+				m.On("List", mock.Anything, mock.Anything).Return(result, nil)
 			},
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, body string) {
-				var res []map[string]interface{}
+				var res map[string]interface{}
 				err := json.Unmarshal([]byte(body), &res)
 				assert.NoError(t, err)
-				assert.Len(t, res, 1)
-				assert.Equal(t, "summary-1", res[0]["id"])
+				assert.Equal(t, float64(1), res["total"])
+				summaries := res["summaries"].([]interface{})
+				assert.Len(t, summaries, 1)
 			},
 		},
 		{
 			name:   "成功ケース: 空のリストを返す",
 			method: http.MethodGet,
 			mockSetup: func(m *MockSummaryRepository) {
-				m.On("List", mock.Anything).Return(summary.SummarySlice{}, nil)
+				result := &summary.ListResult{
+					Items:   summary.SummarySlice{},
+					Total:   0,
+					Limit:   20,
+					Offset:  0,
+					HasNext: false,
+				}
+				m.On("List", mock.Anything, mock.Anything).Return(result, nil)
 			},
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, body string) {
-				var res []map[string]interface{}
+				var res map[string]interface{}
 				err := json.Unmarshal([]byte(body), &res)
 				assert.NoError(t, err)
-				assert.Len(t, res, 0)
+				assert.Equal(t, float64(0), res["total"])
 			},
 		},
 		{
@@ -216,7 +234,7 @@ func TestSummaryHandler_List(t *testing.T) {
 			name:   "失敗ケース: リポジトリでエラー",
 			method: http.MethodGet,
 			mockSetup: func(m *MockSummaryRepository) {
-				m.On("List", mock.Anything).Return(nil, errors.New("db error"))
+				m.On("List", mock.Anything, mock.Anything).Return(nil, errors.New("db error"))
 			},
 			expectedStatus: http.StatusInternalServerError,
 		},

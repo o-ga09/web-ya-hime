@@ -33,11 +33,12 @@ func TestSummaryRepository_Save(t *testing.T) {
 				Title:       "Test Title",
 				Description: "Test Description",
 				Content:     "Test Content",
+				Category:    "雑談",
 				UserID:      "user-id-1",
 			},
 			mockFn: func(mock sqlmock.Sqlmock) {
 				mock.ExpectExec("INSERT INTO summaries").
-					WithArgs("test-id-1", "Test Title", "Test Description", "Test Content", "user-id-1").
+					WithArgs("test-id-1", "Test Title", "Test Description", "Test Content", "雑談", "user-id-1").
 					WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 			wantErr: false,
@@ -51,6 +52,7 @@ func TestSummaryRepository_Save(t *testing.T) {
 				Title:       "Test Title",
 				Description: "Test Description",
 				Content:     "Test Content",
+				Category:    "雑談",
 				UserID:      "user-id-1",
 			},
 			mockFn:  func(mock sqlmock.Sqlmock) {},
@@ -66,11 +68,12 @@ func TestSummaryRepository_Save(t *testing.T) {
 				Title:       "Test Title",
 				Description: "Test Description",
 				Content:     "Test Content",
+				Category:    "雑談",
 				UserID:      "user-id-1",
 			},
 			mockFn: func(mock sqlmock.Sqlmock) {
 				mock.ExpectExec("INSERT INTO summaries").
-					WithArgs("test-id-3", "Test Title", "Test Description", "Test Content", "user-id-1").
+					WithArgs("test-id-3", "Test Title", "Test Description", "Test Content", "雑談", "user-id-1").
 					WillReturnError(fmt.Errorf("db error"))
 			},
 			wantErr: true,
@@ -111,6 +114,7 @@ func TestSummaryRepository_List(t *testing.T) {
 
 	tests := []struct {
 		name    string
+		opts    summary.ListOptions
 		mockFn  func(mock sqlmock.Sqlmock)
 		want    int
 		wantErr bool
@@ -118,14 +122,20 @@ func TestSummaryRepository_List(t *testing.T) {
 	}{
 		{
 			name: "成功ケース: サマリー一覧を取得",
+			opts: summary.ListOptions{Limit: 20, Offset: 0},
 			mockFn: func(mock sqlmock.Sqlmock) {
+				// COUNT query
+				countRows := sqlmock.NewRows([]string{"count"}).AddRow(2)
+				mock.ExpectQuery("SELECT COUNT").WillReturnRows(countRows)
+				
+				// SELECT query
 				rows := sqlmock.NewRows([]string{
-					"id", "title", "description", "content", "user_id", "created_at", "updated_at",
+					"id", "title", "description", "content", "category", "user_id", "created_at", "updated_at",
 					"id", "name", "email", "user_type", "created_at", "updated_at",
 				}).
-					AddRow("summary-1", "Title 1", "Description 1", "Content 1", "user-1", now, now,
+					AddRow("summary-1", "Title 1", "Description 1", "Content 1", "雑談", "user-1", now, now,
 						"user-1", "User Name 1", "user1@example.com", "admin", now, now).
-					AddRow("summary-2", "Title 2", "Description 2", "Content 2", "user-2", now, now,
+					AddRow("summary-2", "Title 2", "Description 2", "Content 2", "雑談", "user-2", now, now,
 						"user-2", "User Name 2", "user2@example.com", "user", now, now)
 
 				mock.ExpectQuery("SELECT (.+) FROM summaries").
@@ -136,9 +146,13 @@ func TestSummaryRepository_List(t *testing.T) {
 		},
 		{
 			name: "成功ケース: 空の結果",
+			opts: summary.ListOptions{Limit: 20, Offset: 0},
 			mockFn: func(mock sqlmock.Sqlmock) {
+				countRows := sqlmock.NewRows([]string{"count"}).AddRow(0)
+				mock.ExpectQuery("SELECT COUNT").WillReturnRows(countRows)
+				
 				rows := sqlmock.NewRows([]string{
-					"id", "title", "description", "content", "user_id", "created_at", "updated_at",
+					"id", "title", "description", "content", "category", "user_id", "created_at", "updated_at",
 					"id", "name", "email", "user_type", "created_at", "updated_at",
 				})
 				mock.ExpectQuery("SELECT (.+) FROM summaries").
@@ -149,13 +163,18 @@ func TestSummaryRepository_List(t *testing.T) {
 		},
 		{
 			name:    "失敗ケース: データベース接続がcontextに存在しない",
+			opts:    summary.ListOptions{Limit: 20, Offset: 0},
 			mockFn:  func(mock sqlmock.Sqlmock) {},
 			wantErr: true,
 			errMsg:  "database connection not found in context",
 		},
 		{
 			name: "失敗ケース: クエリエラー",
+			opts: summary.ListOptions{Limit: 20, Offset: 0},
 			mockFn: func(mock sqlmock.Sqlmock) {
+				countRows := sqlmock.NewRows([]string{"count"}).AddRow(1)
+				mock.ExpectQuery("SELECT COUNT").WillReturnRows(countRows)
+				
 				mock.ExpectQuery("SELECT (.+) FROM summaries").
 					WillReturnError(fmt.Errorf("query error"))
 			},
@@ -177,7 +196,7 @@ func TestSummaryRepository_List(t *testing.T) {
 				ctx = Ctx.SetDB(ctx, db)
 			}
 
-			result, err := repo.List(ctx)
+			result, err := repo.List(ctx, tt.opts)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -185,7 +204,7 @@ func TestSummaryRepository_List(t *testing.T) {
 				assert.Nil(t, result)
 			} else {
 				assert.NoError(t, err)
-				assert.Len(t, result, tt.want)
+				assert.Len(t, result.Items, tt.want)
 			}
 
 			if tt.name != "失敗ケース: データベース接続がcontextに存在しない" {
@@ -216,13 +235,13 @@ func TestSummaryRepository_Detail(t *testing.T) {
 			},
 			mockFn: func(mock sqlmock.Sqlmock) {
 				rows := sqlmock.NewRows([]string{
-					"id", "title", "description", "content", "user_id", "created_at", "updated_at",
+					"id", "title", "description", "content", "category", "user_id", "created_at", "updated_at",
 					"id", "name", "email", "user_type", "created_at", "updated_at",
 				}).
-					AddRow("summary-1", "Title 1", "Description 1", "Content 1", "user-1", now, now,
+					AddRow("summary-1", "Title 1", "Description 1", "Content 1", "雑談", "user-1", now, now,
 						"user-1", "User Name 1", "user1@example.com", "admin", now, now)
 
-				mock.ExpectQuery("SELECT (.+) FROM summaries (.+) WHERE s.id = ?").
+				mock.ExpectQuery("SELECT (.+) FROM summaries (.+) WHERE s.id = (.+) AND s.deleted_at IS NULL").
 					WithArgs("summary-1").
 					WillReturnRows(rows)
 			},
@@ -233,6 +252,7 @@ func TestSummaryRepository_Detail(t *testing.T) {
 				assert.Equal(t, "Title 1", result.Title)
 				assert.Equal(t, "Description 1", result.Description)
 				assert.Equal(t, "Content 1", result.Content)
+				assert.Equal(t, "雑談", result.Category)
 				assert.NotNil(t, result.User)
 				assert.Equal(t, "user-1", result.User.ID)
 				assert.Equal(t, "User Name 1", result.User.Name)
@@ -246,7 +266,7 @@ func TestSummaryRepository_Detail(t *testing.T) {
 				},
 			},
 			mockFn: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT (.+) FROM summaries (.+) WHERE s.id = ?").
+				mock.ExpectQuery("SELECT (.+) FROM summaries (.+) WHERE s.id = (.+) AND s.deleted_at IS NULL").
 					WithArgs("non-existent").
 					WillReturnError(sql.ErrNoRows)
 			},
@@ -332,7 +352,7 @@ func TestSummaryRepository_Delete(t *testing.T) {
 				},
 			},
 			mockFn: func(mock sqlmock.Sqlmock) {
-				mock.ExpectExec("DELETE FROM summaries WHERE id = ?").
+				mock.ExpectExec("UPDATE summaries SET deleted_at = NOW\\(\\) WHERE id = \\? AND deleted_at IS NULL").
 					WithArgs("summary-1").
 					WillReturnResult(sqlmock.NewResult(0, 1))
 			},
@@ -346,7 +366,7 @@ func TestSummaryRepository_Delete(t *testing.T) {
 				},
 			},
 			mockFn: func(mock sqlmock.Sqlmock) {
-				mock.ExpectExec("DELETE FROM summaries WHERE id = ?").
+				mock.ExpectExec("UPDATE summaries SET deleted_at = NOW\\(\\) WHERE id = \\? AND deleted_at IS NULL").
 					WithArgs("non-existent").
 					WillReturnResult(sqlmock.NewResult(0, 0))
 			},
@@ -372,7 +392,7 @@ func TestSummaryRepository_Delete(t *testing.T) {
 				},
 			},
 			mockFn: func(mock sqlmock.Sqlmock) {
-				mock.ExpectExec("DELETE FROM summaries WHERE id = ?").
+				mock.ExpectExec("UPDATE summaries SET deleted_at = NOW\\(\\) WHERE id = \\? AND deleted_at IS NULL").
 					WithArgs("summary-1").
 					WillReturnError(fmt.Errorf("delete error"))
 			},

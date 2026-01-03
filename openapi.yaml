@@ -227,17 +227,50 @@ paths:
       tags:
         - summaries
       summary: サマリー一覧取得
-      description: 登録されているすべてのサマリーを取得します
+      description: |
+        登録されているサマリーを取得します。
+        カテゴリで絞り込み、ページネーションに対応しています。
       operationId: listSummaries
+      parameters:
+        - name: category
+          in: query
+          required: false
+          description: 'カテゴリで絞り込み（例: 雑談、ゲーム（スプラ）、ゲーム（APEX）など）'
+          schema:
+            type: string
+            example: "雑談"
+        - name: limit
+          in: query
+          required: false
+          description: '取得件数（デフォルト: 20、最大: 100）'
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 50
+        - name: offset
+          in: query
+          required: false
+          description: 'オフセット（デフォルト: 0）'
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+            example: 0
       responses:
         '200':
           description: サマリー一覧取得成功
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DetailSummary'
+                $ref: '#/components/schemas/ListSummaryResponse'
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: サーバーエラー
           content:
@@ -385,6 +418,7 @@ components:
       required:
         - title
         - content
+        - category
       properties:
         id:
           type: string
@@ -405,6 +439,11 @@ components:
           type: string
           description: コンテンツ本文
           example: "詳細な内容がここに入ります。"
+        category:
+          type: string
+          maxLength: 100
+          description: 'カテゴリ（例: 雑談、ゲーム（スプラ）、ゲーム（APEX）など）'
+          example: "雑談"
         user_id:
           type: string
           format: uuid
@@ -422,10 +461,22 @@ components:
         user:
           $ref: '#/components/schemas/User'
           nullable: true
+        title:
+          type: string
+          description: タイトル
+          example: "プロジェクト概要"
+        description:
+          type: string
+          description: 説明
+          example: "このプロジェクトの概要を記載します"
         content:
           type: string
           description: コンテンツ本文
           example: "詳細な内容がここに入ります。"
+        category:
+          type: string
+          description: カテゴリ
+          example: "雑談"
         created_at:
           type: string
           format: date-time
@@ -436,6 +487,31 @@ components:
           format: date-time
           description: 更新日時
           example: "2025-12-07 10:30:00"
+
+    ListSummaryResponse:
+      type: object
+      properties:
+        summaries:
+          type: array
+          items:
+            $ref: '#/components/schemas/DetailSummary'
+          description: サマリーの配列
+        total:
+          type: integer
+          description: 総件数（フィルタリング条件に一致する全データ件数）
+          example: 125
+        limit:
+          type: integer
+          description: 1回のリクエストで取得する最大件数
+          example: 50
+        offset:
+          type: integer
+          description: 取得開始位置（0始まり）
+          example: 0
+        has_next:
+          type: boolean
+          description: 次のページが存在するかどうか
+          example: true
 
     Error:
       type: object

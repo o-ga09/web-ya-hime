@@ -72,8 +72,30 @@ func (s *summaryHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
+	var req request.ListSummaryRequest
+	if err := request.Bind(r, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	// デフォルト値の設定
+	if req.Limit <= 0 {
+		req.Limit = 20
+	}
+	if req.Offset < 0 {
+		req.Offset = 0
+	}
+	if err := request.Validate(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	// リポジトリからリストを取得
-	summaries, err := s.repo.List(ctx)
+	opts := summary.ListOptions{
+		Category: req.Category,
+		Limit:    req.Limit,
+		Offset:   req.Offset,
+	}
+	result, err := s.repo.List(ctx, opts)
 	if err != nil {
 		logger.Error(ctx, "error", err)
 		http.Error(w, "Failed to get summary list", http.StatusInternalServerError)
@@ -81,7 +103,14 @@ func (s *summaryHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// レスポンスを返す
-	httputil.Response(&w, http.StatusOK, response.ToListSummary(summaries))
+	res := &response.ListSummary{
+		Summaries: response.ToListSummary(result.Items),
+		Total:     result.Total,
+		Limit:     result.Limit,
+		Offset:    result.Offset,
+		HasNext:   result.HasNext,
+	}
+	httputil.Response(&w, http.StatusOK, res)
 }
 
 func (s *summaryHandler) Detail(w http.ResponseWriter, r *http.Request) {

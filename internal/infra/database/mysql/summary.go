@@ -23,8 +23,8 @@ func (s *summaryRepository) Save(ctx context.Context, model *summary.Summary) er
 		return fmt.Errorf("database connection not found in context")
 	}
 
-	query := `INSERT INTO summaries (id, title, description, content, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())`
-	_, err := db.ExecContext(ctx, query, model.ID, model.Title, model.Description, model.Content, model.UserID)
+	query := `INSERT INTO summaries (id, title, description, content, category, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`
+	_, err := db.ExecContext(ctx, query, model.ID, model.Title, model.Description, model.Content, model.Category, model.UserID)
 	if err != nil {
 		return fmt.Errorf("failed to save summary: %w", err)
 	}
@@ -32,21 +32,49 @@ func (s *summaryRepository) Save(ctx context.Context, model *summary.Summary) er
 	return nil
 }
 
-func (s *summaryRepository) List(ctx context.Context) (summary.SummarySlice, error) {
+func (s *summaryRepository) List(ctx context.Context, opts summary.ListOptions) (*summary.ListResult, error) {
 	db := Ctx.GetDB(ctx)
 	if db == nil {
 		return nil, fmt.Errorf("database connection not found in context")
 	}
 
-	query := `
+	// デフォルト値の設定
+	if opts.Limit <= 0 {
+		opts.Limit = 20
+	}
+	if opts.Offset < 0 {
+		opts.Offset = 0
+	}
+
+	// WHERE句の構築
+	whereClause := "WHERE s.deleted_at IS NULL"
+	args := []interface{}{}
+	if opts.Category != "" {
+		whereClause += " AND s.category = ?"
+		args = append(args, opts.Category)
+	}
+
+	// 総件数を取得
+	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM summaries s %s`, whereClause)
+	var total int
+	if err := db.QueryRowContext(ctx, countQuery, args...).Scan(&total); err != nil {
+		return nil, fmt.Errorf("failed to get total count: %w", err)
+	}
+
+	// データ取得
+	query := fmt.Sprintf(`
 		SELECT 
-			s.id, s.title, s.description, s.content, s.user_id, s.created_at, s.updated_at,
+			s.id, s.title, s.description, s.content, s.category, s.user_id, s.created_at, s.updated_at,
 			u.id, u.name, u.email, u.user_type, u.created_at, u.updated_at
 		FROM summaries s
-		LEFT JOIN users u ON s.user_id = u.id
+		LEFT JOIN users u ON s.user_id = u.id AND u.deleted_at IS NULL
+		%s
 		ORDER BY s.created_at DESC
-	`
-	rows, err := db.QueryContext(ctx, query)
+		LIMIT ? OFFSET ?
+	`, whereClause)
+
+	queryArgs := append(args, opts.Limit+1, opts.Offset) // +1で次のページの有無を判定
+	rows, err := db.QueryContext(ctx, query, queryArgs...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get summary list: %w", err)
 	}
@@ -58,7 +86,7 @@ func (s *summaryRepository) List(ctx context.Context) (summary.SummarySlice, err
 		var u user.User
 
 		if err := rows.Scan(
-			&s.ID, &s.Title, &s.Description, &s.Content, &s.UserID, &s.CreatedAt, &s.UpdatedAt,
+			&s.ID, &s.Title, &s.Description, &s.Content, &s.Category, &s.UserID, &s.CreatedAt, &s.UpdatedAt,
 			&u.ID, &u.Name, &u.Email, &u.UserType, &u.CreatedAt, &u.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan summary: %w", err)
@@ -82,7 +110,19 @@ func (s *summaryRepository) List(ctx context.Context) (summary.SummarySlice, err
 		return nil, fmt.Errorf("rows iteration error: %w", err)
 	}
 
-	return summaries, nil
+	// 次のページがあるか判定
+	hasNext := len(summaries) > opts.Limit
+	if hasNext {
+		summaries = summaries[:opts.Limit]
+	}
+
+	return &summary.ListResult{
+		Items:   summaries,
+		Total:   total,
+		Limit:   opts.Limit,
+		Offset:  opts.Offset,
+		HasNext: hasNext,
+	}, nil
 }
 
 func (s *summaryRepository) Detail(ctx context.Context, model *summary.Summary) (*summary.Summary, error) {
@@ -93,11 +133,11 @@ func (s *summaryRepository) Detail(ctx context.Context, model *summary.Summary) 
 
 	query := `
 		SELECT 
-			s.id, s.title, s.description, s.content, s.user_id, s.created_at, s.updated_at,
+			s.id, s.title, s.description, s.content, s.category, s.user_id, s.created_at, s.updated_at,
 			u.id, u.name, u.email, u.user_type, u.created_at, u.updated_at
 		FROM summaries s
-		LEFT JOIN users u ON s.user_id = u.id
-		WHERE s.id = ?
+		LEFT JOIN users u ON s.user_id = u.id AND u.deleted_at IS NULL
+		WHERE s.id = ? AND s.deleted_at IS NULL
 	`
 	var result summary.Summary
 	var userID, userName, userEmail, userType sql.NullString
@@ -108,6 +148,7 @@ func (s *summaryRepository) Detail(ctx context.Context, model *summary.Summary) 
 		&result.Title,
 		&result.Description,
 		&result.Content,
+		&result.Category,
 		&result.UserID,
 		&result.CreatedAt,
 		&result.UpdatedAt,
@@ -147,7 +188,7 @@ func (s *summaryRepository) Delete(ctx context.Context, model *summary.Summary) 
 		return fmt.Errorf("database connection not found in context")
 	}
 
-	query := `DELETE FROM summaries WHERE id = ?`
+	query := `UPDATE summaries SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL`
 	result, err := db.ExecContext(ctx, query, model.ID)
 	if err != nil {
 		return fmt.Errorf("failed to delete summary: %w", err)
