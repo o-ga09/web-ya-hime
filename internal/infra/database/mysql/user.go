@@ -42,7 +42,7 @@ func (u *User) List(ctx context.Context) (user.UserSlice, error) {
 		return nil, fmt.Errorf("database connection not found in context")
 	}
 
-	query := `SELECT id, name, email, user_type, created_at, updated_at FROM users ORDER BY created_at DESC`
+	query := `SELECT id, name, email, user_type, created_at, updated_at FROM users WHERE deleted_at IS NULL ORDER BY created_at DESC`
 	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user list: %w", err)
@@ -71,7 +71,7 @@ func (u *User) Detail(ctx context.Context, model *user.User) (*user.User, error)
 		return nil, fmt.Errorf("database connection not found in context")
 	}
 
-	query := `SELECT id, name, email, user_type, created_at, updated_at FROM users WHERE id = ?`
+	query := `SELECT id, name, email, user_type, created_at, updated_at FROM users WHERE id = ? AND deleted_at IS NULL`
 	var result user.User
 	err := db.QueryRowContext(ctx, query, model.ID).Scan(
 		&result.ID,
@@ -97,7 +97,7 @@ func (u *User) Delete(ctx context.Context, model *user.User) error {
 		return fmt.Errorf("database connection not found in context")
 	}
 
-	query := `DELETE FROM users WHERE id = ?`
+	query := `UPDATE users SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL`
 	result, err := db.ExecContext(ctx, query, model.ID)
 	if err != nil {
 		return fmt.Errorf("failed to delete user: %w", err)

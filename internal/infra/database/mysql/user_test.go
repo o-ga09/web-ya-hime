@@ -336,7 +336,7 @@ func TestUserRepository_Delete(t *testing.T) {
 				},
 			},
 			mockFn: func(mock sqlmock.Sqlmock) {
-				mock.ExpectExec("DELETE FROM users WHERE id = ?").
+				mock.ExpectExec("UPDATE users SET deleted_at = NOW\\(\\) WHERE id = \\? AND deleted_at IS NULL").
 					WithArgs("user-1").
 					WillReturnResult(sqlmock.NewResult(0, 1))
 			},
@@ -350,7 +350,7 @@ func TestUserRepository_Delete(t *testing.T) {
 				},
 			},
 			mockFn: func(mock sqlmock.Sqlmock) {
-				mock.ExpectExec("DELETE FROM users WHERE id = ?").
+				mock.ExpectExec("UPDATE users SET deleted_at = NOW\\(\\) WHERE id = \\? AND deleted_at IS NULL").
 					WithArgs("non-existent").
 					WillReturnResult(sqlmock.NewResult(0, 0))
 			},
@@ -376,7 +376,7 @@ func TestUserRepository_Delete(t *testing.T) {
 				},
 			},
 			mockFn: func(mock sqlmock.Sqlmock) {
-				mock.ExpectExec("DELETE FROM users WHERE id = ?").
+				mock.ExpectExec("UPDATE users SET deleted_at = NOW\\(\\) WHERE id = \\? AND deleted_at IS NULL").
 					WithArgs("user-1").
 					WillReturnError(fmt.Errorf("delete error"))
 			},
@@ -391,7 +391,7 @@ func TestUserRepository_Delete(t *testing.T) {
 				},
 			},
 			mockFn: func(mock sqlmock.Sqlmock) {
-				mock.ExpectExec("DELETE FROM users WHERE id = ?").
+				mock.ExpectExec("UPDATE users SET deleted_at = NOW\\(\\) WHERE id = \\? AND deleted_at IS NULL").
 					WithArgs("user-1").
 					WillReturnResult(sqlmock.NewErrorResult(fmt.Errorf("rows affected error")))
 			},
