@@ -153,7 +153,7 @@ engine.HandleFunc("POST /entities", handler)
 - **main**: 本番環境用のメインブランチ
 - **story-#<番号>**: 機能実装用のフィーチャーブランチ（例: `story-#2`）
 
-### 開発フロー（機能実装 → PR作成 → レビュー対応）
+### 開発フロー（機能実装 → PR 作成 → レビュー対応）
 
 #### 1. 機能実装とコミット
 
@@ -169,21 +169,22 @@ git commit -m "feat: 機能の説明"
 git push origin <ブランチ名>
 ```
 
-#### 2. MCPツールでPR作成
+#### 2. MCP ツールで PR 作成
 
-GitHubのMCPツールを使用してプルリクエストを作成:
+GitHub の MCP ツールを使用してプルリクエストを作成:
 
 ```
 # Copilotに依頼する例:
 "o-ga09/web-ya-himeにPRテンプレートを使用してPRを作成して"
 ```
 
-MCPツール内部では以下が実行される:
+MCP ツール内部では以下が実行される:
+
 - `mcp_github_create_pull_request` を使用
 - `base`: "main"（マージ先ブランチ）
 - `head`: 現在のブランチ（例: "story-#2"）
-- `title`: わかりやすいPRタイトル
-- `body`: PRの概要、変更内容、技術詳細、使用例などを含む詳細な説明
+- `title`: わかりやすい PR タイトル
+- `body`: PR の概要、変更内容、技術詳細、使用例などを含む詳細な説明
 
 #### 3. レビューコメント対応
 
@@ -202,7 +203,7 @@ git push origin <ブランチ名>
 
 #### 4. レビューコメント取得の方法
 
-MCPツールでレビューコメントを確認:
+MCP ツールでレビューコメントを確認:
 
 ```
 # 方法1: レビューコメント取得
@@ -228,13 +229,14 @@ mcp_github_pull_request_read(method="get", owner="o-ga09", repo="web-ya-hime", p
 - `chore:` - ビルド処理、補助ツールの変更
 
 例:
+
 ```bash
 git commit -m "feat: カテゴリ機能とページネーション実装"
 git commit -m "fix: レビューコメント対応 - NULL対応とポインタ型使用"
 git commit -m "style: gofmtでコードフォーマットを修正"
 ```
 
-### よくあるGit操作
+### よくある Git 操作
 
 ```bash
 # 現在のブランチ確認
@@ -256,7 +258,7 @@ git log --oneline
 git commit --amend
 ```
 
-### フォーマットとLint
+### フォーマットと Lint
 
 コミット前に必ず実行:
 
@@ -271,4 +273,4 @@ make lint
 make test
 ```
 
-これらのチェックは、PRのCIでも自動実行されます。
+これらのチェックは、PR の CI でも自動実行されます。
