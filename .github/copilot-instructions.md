@@ -145,3 +145,130 @@ engine.HandleFunc("POST /entities", handler)
 ### 新しいミドルウェア追加
 
 `internal/server/middleware.go` に関数定義 → `UseMiddleware()` 内で適用
+
+## Git & GitHub ワークフロー
+
+### ブランチ戦略
+
+- **main**: 本番環境用のメインブランチ
+- **story-#<番号>**: 機能実装用のフィーチャーブランチ（例: `story-#2`）
+
+### 開発フロー（機能実装 → PR作成 → レビュー対応）
+
+#### 1. 機能実装とコミット
+
+```bash
+# 実装完了後、変更をステージング
+git add -A
+
+# わかりやすいコミットメッセージでコミット
+git commit -m "feat: 機能の説明"
+# 例: git commit -m "feat: カテゴリ機能・ページネーション・論理削除の実装"
+
+# リモートブランチにプッシュ
+git push origin <ブランチ名>
+```
+
+#### 2. MCPツールでPR作成
+
+GitHubのMCPツールを使用してプルリクエストを作成:
+
+```
+# Copilotに依頼する例:
+"o-ga09/web-ya-himeにPRテンプレートを使用してPRを作成して"
+```
+
+MCPツール内部では以下が実行される:
+- `mcp_github_create_pull_request` を使用
+- `base`: "main"（マージ先ブランチ）
+- `head`: 現在のブランチ（例: "story-#2"）
+- `title`: わかりやすいPRタイトル
+- `body`: PRの概要、変更内容、技術詳細、使用例などを含む詳細な説明
+
+#### 3. レビューコメント対応
+
+```bash
+# レビューコメントを確認
+"MCPを使用してPR #<番号>のレビューコメントを取得して"
+
+# コメントに対応後、再度コミット
+git add -A
+git commit -m "fix: レビューコメント対応 - 修正内容の説明"
+# 例: git commit -m "fix: レビューコメント対応 - カテゴリをNULL可能に変更、ポインタ型使用"
+
+# プッシュ（PRが自動更新される）
+git push origin <ブランチ名>
+```
+
+#### 4. レビューコメント取得の方法
+
+MCPツールでレビューコメントを確認:
+
+```
+# 方法1: レビューコメント取得
+mcp_github_pull_request_read(method="get_review_comments", owner="o-ga09", repo="web-ya-hime", pullNumber=<PR番号>)
+
+# 方法2: 通常のコメント取得
+mcp_github_pull_request_read(method="get_comments", owner="o-ga09", repo="web-ya-hime", pullNumber=<PR番号>)
+
+# 方法3: PR詳細取得
+mcp_github_pull_request_read(method="get", owner="o-ga09", repo="web-ya-hime", pullNumber=<PR番号>)
+```
+
+### コミットメッセージ規約
+
+プレフィックスを使用した明確なメッセージ:
+
+- `feat:` - 新機能追加
+- `fix:` - バグ修正
+- `refactor:` - リファクタリング
+- `test:` - テスト追加・修正
+- `docs:` - ドキュメント更新
+- `style:` - コードフォーマット修正（機能変更なし）
+- `chore:` - ビルド処理、補助ツールの変更
+
+例:
+```bash
+git commit -m "feat: カテゴリ機能とページネーション実装"
+git commit -m "fix: レビューコメント対応 - NULL対応とポインタ型使用"
+git commit -m "style: gofmtでコードフォーマットを修正"
+```
+
+### よくあるGit操作
+
+```bash
+# 現在のブランチ確認
+git branch
+
+# 変更されたファイル確認
+git status
+
+# 差分確認
+git diff
+
+# 特定ファイルの差分確認
+git diff <ファイルパス>
+
+# コミット履歴確認
+git log --oneline
+
+# 最新のコミットを修正（まだpushしていない場合）
+git commit --amend
+```
+
+### フォーマットとLint
+
+コミット前に必ず実行:
+
+```bash
+# コードフォーマット
+gofmt -w .
+
+# Lint実行
+make lint
+
+# テスト実行
+make test
+```
+
+これらのチェックは、PRのCIでも自動実行されます。
