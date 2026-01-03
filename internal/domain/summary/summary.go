@@ -38,12 +38,11 @@ type Summary struct {
 	Title         string                   `json:"title"`
 	Description   string                   `json:"description"`
 	Content       string                   `json:"content"`
-	Category      sql.NullString           `json:"category"`
 	CategoryID    sql.NullString           `json:"category_id"`
 	SubcategoryID sql.NullString           `json:"subcategory_id"`
 	UserID        string                   `json:"user_id"`
 	User          *user.User               `json:"user,omitempty"`
-	CategoryObj   *category.Category       `json:"category_obj,omitempty"`
+	Category      *category.Category       `json:"category,omitempty"`
 	Subcategory   *subcategory.Subcategory `json:"subcategory,omitempty"`
 }
 

@@ -1,0 +1,80 @@
+title: サブカテゴリ管理APIテスト
+vars:
+  parentCategoryID: ""
+  newSubcategoryID: ""
+
+steps:
+  - title: 親カテゴリを作成
+    protocol: http
+    request:
+      method: POST
+      url: "http://localhost:8080/categories"
+      header:
+        Content-Type: application/json
+      body:
+        name: "E2E-サブカテゴリテスト親"
+    expect:
+      code: 200
+    bind:
+      vars:
+        parentCategoryID: "{{response.body.category_id}}"
+
+  - title: サブカテゴリを作成
+    protocol: http
+    request:
+      method: POST
+      url: "http://localhost:8080/subcategories"
+      header:
+        Content-Type: application/json
+      body:
+        category_id: "{{vars.parentCategoryID}}"
+        name: "E2E-サブカテゴリ"
+    expect:
+      code: 200
+    bind:
+      vars:
+        newSubcategoryID: "{{response.body.subcategory_id}}"
+
+  - title: サブカテゴリ一覧を取得（全件）
+    protocol: http
+    request:
+      method: GET
+      url: "http://localhost:8080/subcategories"
+    expect:
+      code: 200
+
+  - title: サブカテゴリ一覧を取得（カテゴリ指定）
+    protocol: http
+    request:
+      method: GET
+      url: "http://localhost:8080/subcategories?category_id={{vars.parentCategoryID}}"
+    expect:
+      code: 200
+
+  - title: サブカテゴリ詳細を取得
+    protocol: http
+    request:
+      method: GET
+      url: "http://localhost:8080/subcategories/{{vars.newSubcategoryID}}"
+    expect:
+      code: 200
+      body:
+        id: "{{vars.newSubcategoryID}}"
+        category_id: "{{vars.parentCategoryID}}"
+        name: "E2E-サブカテゴリ"
+
+  - title: サブカテゴリを削除
+    protocol: http
+    request:
+      method: DELETE
+      url: "http://localhost:8080/subcategories/{{vars.newSubcategoryID}}"
+    expect:
+      code: 200
+
+  - title: 親カテゴリを削除（クリーンアップ）
+    protocol: http
+    request:
+      method: DELETE
+      url: "http://localhost:8080/categories/{{vars.parentCategoryID}}"
+    expect:
+      code: 200

@@ -1,0 +1,50 @@
+title: カテゴリ管理APIテスト
+
+steps:
+  - title: カテゴリを作成
+    protocol: http
+    request:
+      method: POST
+      url: "http://localhost:8080/categories"
+      header:
+        Content-Type: application/json
+      body:
+        name: "E2E-cat-test"
+    expect:
+      code: 200
+    bind:
+      vars:
+        createdCategoryID: "{{response.body.category_id}}"
+        createdCategoryName: "E2E-cat-test"
+
+  - title: カテゴリ一覧を取得
+    protocol: http
+    request:
+      method: GET
+      url: "http://localhost:8080/categories"
+    expect:
+      code: 200
+
+  - title: カテゴリ詳細を取得
+    protocol: http
+    request:
+      method: GET
+      url: "http://localhost:8080/categories/{{vars.createdCategoryID}}"
+    expect:
+      code: 200
+
+  - title: カテゴリを削除
+    protocol: http
+    request:
+      method: DELETE
+      url: "http://localhost:8080/categories/{{vars.createdCategoryID}}"
+    expect:
+      code: 200
+
+  - title: 削除されたカテゴリの取得が失敗することを確認
+    protocol: http
+    request:
+      method: GET
+      url: "http://localhost:8080/categories/{{vars.createdCategoryID}}"
+    expect:
+      code: 404

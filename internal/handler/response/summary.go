@@ -3,7 +3,6 @@ package response
 import (
 	SummaryDomain "github.com/o-ga09/web-ya-hime/internal/domain/summary"
 	"github.com/o-ga09/web-ya-hime/pkg/date"
-	nullvalue "github.com/o-ga09/web-ya-hime/pkg/null_value"
 )
 
 // ListResponse はリスト取得のレスポンス構造体
@@ -17,14 +16,15 @@ type ListSummary struct {
 
 // DetailSummary はサマリーの詳細構造体
 type DetailSummary struct {
-	ID          string  `json:"id"`
-	User        *user   `json:"user"`
-	Title       string  `json:"title"`
-	Description string  `json:"description"`
-	Content     string  `json:"content"`
-	Category    *string `json:"category,omitempty"`
-	CreatedAt   string  `json:"created_at"`
-	UpdatedAt   string  `json:"updated_at"`
+	ID          string               `json:"id"`
+	User        *user                `json:"user"`
+	Title       string               `json:"title"`
+	Description string               `json:"description"`
+	Content     string               `json:"content"`
+	CreatedAt   string               `json:"created_at"`
+	UpdatedAt   string               `json:"updated_at"`
+	Category    *CategoryResponse    `json:"category,omitempty"`
+	SubCategory *SubcategoryResponse `json:"subcategory,omitempty"`
 }
 
 func ToListSummary(summaries []*SummaryDomain.Summary) []*DetailSummary {
@@ -41,13 +41,18 @@ func ToSummaryResponse(s *SummaryDomain.Summary) *DetailSummary {
 		Title:       s.Title,
 		Description: s.Description,
 		Content:     s.Content,
-		Category:    nullvalue.SqlStringToPointer(s.Category),
 		CreatedAt:   date.FormatDefault(s.CreatedAt),
 		UpdatedAt:   date.FormatDefault(s.UpdatedAt),
 	}
 
 	if s.User != nil {
 		res.User = ToUserResponse(s.User)
+	}
+	if s.Category != nil {
+		res.Category = ToCategoryResponse(s.Category)
+	}
+	if s.Subcategory != nil {
+		res.SubCategory = ToSubCategoryResponse(s.Subcategory)
 	}
 
 	return res

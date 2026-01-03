@@ -1,0 +1,163 @@
+title: カテゴリとサブカテゴリのバリデーションテスト
+vars:
+  userID: ""
+  categoryID1: ""
+  categoryID2: ""
+  subcategoryID: ""
+
+steps:
+  # セットアップ
+  - title: テストユーザーを取得
+    protocol: http
+    request:
+      method: GET
+      url: "http://localhost:8080/users?email=sato@example.com"
+    expect:
+      code: 200
+    bind:
+      vars:
+        userID: "{{response.body.users[0].id}}"
+
+  - title: カテゴリ1を作成（ゲーム）
+    protocol: http
+    request:
+      method: POST
+      url: "http://localhost:8080/categories"
+      header:
+        Content-Type: application/json
+      body:
+        name: "E2E-バリデーションゲーム"
+    expect:
+      code: 200
+    bind:
+      vars:
+        categoryID1: "{{response.body.category_id}}"
+
+  - title: カテゴリ2を作成（技術）
+    protocol: http
+    request:
+      method: POST
+      url: "http://localhost:8080/categories"
+      header:
+        Content-Type: application/json
+      body:
+        name: "E2E-バリデーション技術"
+    expect:
+      code: 200
+    bind:
+      vars:
+        categoryID2: "{{response.body.category_id}}"
+
+  - title: カテゴリ1にサブカテゴリを作成（スプラトゥーン）
+    protocol: http
+    request:
+      method: POST
+      url: "http://localhost:8080/subcategories"
+      header:
+        Content-Type: application/json
+      body:
+        category_id: "{{vars.categoryID1}}"
+        name: "E2E-スプラトゥーン"
+    expect:
+      code: 200
+    bind:
+      vars:
+        subcategoryID: "{{response.body.subcategory_id}}"
+
+  # バリデーションテスト: サブカテゴリのみ指定（正常系）
+  - title: サブカテゴリのみ指定してサマリーを作成（自動的に親カテゴリが設定される）
+    protocol: http
+    request:
+      method: POST
+      url: "http://localhost:8080/summaries"
+      header:
+        Content-Type: application/json
+      body:
+        title: "スプラトゥーン攻略"
+        description: "武器の使い方"
+        content: "シューターがおすすめ"
+        subcategory_id: "{{vars.subcategoryID}}"
+        user_id: "{{vars.userID}}"
+    expect:
+      code: 200
+
+  # バリデーションテスト: 正しいカテゴリとサブカテゴリの組み合わせ（正常系）
+  - title: 正しいカテゴリとサブカテゴリの組み合わせでサマリーを作成
+    protocol: http
+    request:
+      method: POST
+      url: "http://localhost:8080/summaries"
+      header:
+        Content-Type: application/json
+      body:
+        title: "スプラトゥーン大会レポート"
+        description: "大会の結果"
+        content: "優勝しました！"
+        category: "ゲーム"
+        category_id: "{{vars.categoryID1}}"
+        subcategory_id: "{{vars.subcategoryID}}"
+        user_id: "{{vars.userID}}"
+    expect:
+      code: 200
+
+  # バリデーションテスト: 誤ったカテゴリとサブカテゴリの組み合わせ（異常系）
+  - title: 誤ったカテゴリとサブカテゴリの組み合わせでサマリー作成が失敗
+    protocol: http
+    request:
+      method: POST
+      url: "http://localhost:8080/summaries"
+      header:
+        Content-Type: application/json
+      body:
+        title: "テスト"
+        description: "テスト"
+        content: "テスト"
+        category: "技術"
+        category_id: "{{vars.categoryID2}}"  # 技術カテゴリ
+        subcategory_id: "{{vars.subcategoryID}}"  # ゲームカテゴリのサブカテゴリ
+        user_id: "{{vars.userID}}"
+    expect:
+      code: 400
+
+  # バリデーションテスト: サマリー検索でサブカテゴリのみ指定（正常系）
+  - title: サブカテゴリのみ指定してサマリーを検索
+    protocol: http
+    request:
+      method: GET
+      url: "http://localhost:8080/summaries?subcategory_id={{vars.subcategoryID}}"
+    expect:
+      code: 200
+
+  # バリデーションテスト: サマリー検索で誤った組み合わせ（異常系）
+  - title: 誤ったカテゴリとサブカテゴリの組み合わせでサマリー検索が失敗
+    protocol: http
+    request:
+      method: GET
+      url: "http://localhost:8080/summaries?category_id={{vars.categoryID2}}&subcategory_id={{vars.subcategoryID}}"
+    expect:
+      code: 400
+
+  # クリーンアップ
+  - title: サブカテゴリを削除
+    protocol: http
+    request:
+      method: DELETE
+      url: "http://localhost:8080/subcategories/{{vars.subcategoryID}}"
+    expect:
+      code: 200
+
+  - title: カテゴリ1を削除
+    protocol: http
+    request:
+      method: DELETE
+      url: "http://localhost:8080/categories/{{vars.categoryID1}}"
+    expect:
+      code: 200
+
+  - title: カテゴリ2を削除
+    protocol: http
+    request:
+      method: DELETE
+      url: "http://localhost:8080/categories/{{vars.categoryID2}}"
+    expect:
+      code: 200

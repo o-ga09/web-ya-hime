@@ -47,6 +47,11 @@ func (h *subcategoryHandler) Save(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.Method == http.MethodPut && req.ID == "" {
+		http.Error(w, "Subcategory ID is required for update", http.StatusBadRequest)
+		return
+	}
+
 	// IDが指定されていない場合は生成
 	id := req.ID
 	if id == "" {

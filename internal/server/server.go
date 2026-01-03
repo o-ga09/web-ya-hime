@@ -61,6 +61,7 @@ func (s *server) Run(ctx context.Context) error {
 	userDeleteHandler := UseMiddleware(ctx, s.user.Delete)
 
 	engine.HandleFunc("POST /users", userSaveHandler)
+	engine.HandleFunc("PUT /users/{id}", userSaveHandler)
 	engine.HandleFunc("GET /users", userListHandler)
 	engine.HandleFunc("GET /users/{id}", userDetailHandler)
 	engine.HandleFunc("DELETE /users/{id}", userDeleteHandler)
@@ -72,6 +73,7 @@ func (s *server) Run(ctx context.Context) error {
 	summaryDeleteHandler := UseMiddleware(ctx, s.summary.Delete)
 
 	engine.HandleFunc("POST /summaries", summarySaveHandler)
+	engine.HandleFunc("PUT /summaries/{id}", summarySaveHandler)
 	engine.HandleFunc("GET /summaries", summaryListHandler)
 	engine.HandleFunc("GET /summaries/{id}", summaryDetailHandler)
 	engine.HandleFunc("DELETE /summaries/{id}", summaryDeleteHandler)
@@ -83,6 +85,7 @@ func (s *server) Run(ctx context.Context) error {
 	categoryDeleteHandler := UseMiddleware(ctx, s.category.Delete)
 
 	engine.HandleFunc("POST /categories", categorySaveHandler)
+	engine.HandleFunc("PUT /categories/{id}", categorySaveHandler)
 	engine.HandleFunc("GET /categories", categoryListHandler)
 	engine.HandleFunc("GET /categories/{id}", categoryDetailHandler)
 	engine.HandleFunc("DELETE /categories/{id}", categoryDeleteHandler)
@@ -94,6 +97,7 @@ func (s *server) Run(ctx context.Context) error {
 	subcategoryDeleteHandler := UseMiddleware(ctx, s.subcategory.Delete)
 
 	engine.HandleFunc("POST /subcategories", subcategorySaveHandler)
+	engine.HandleFunc("PUT /subcategories/{id}", subcategorySaveHandler)
 	engine.HandleFunc("GET /subcategories", subcategoryListHandler)
 	engine.HandleFunc("GET /subcategories/{id}", subcategoryDetailHandler)
 	engine.HandleFunc("DELETE /subcategories/{id}", subcategoryDeleteHandler)

@@ -237,6 +237,13 @@ func setFieldValue(field reflect.Value, value string) error {
 			return fmt.Errorf("cannot parse float: %w", err)
 		}
 		field.SetFloat(floatValue)
+	case reflect.Pointer:
+		elemType := field.Type().Elem()
+		newValue := reflect.New(elemType)
+		if err := setFieldValue(newValue.Elem(), value); err != nil {
+			return err
+		}
+		field.Set(newValue)
 	default:
 		return fmt.Errorf("unsupported field type: %s", field.Kind())
 	}

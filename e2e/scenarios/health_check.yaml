@@ -1,0 +1,23 @@
+title: ヘルスチェック
+vars: {}
+
+steps:
+  - title: アプリケーションのヘルスチェック
+    protocol: http
+    request:
+      method: GET
+      url: "http://localhost:8080/health"
+    expect:
+      code: 200
+      body:
+        message: "OK"
+
+  - title: データベースのヘルスチェック
+    protocol: http
+    request:
+      method: GET
+      url: "http://localhost:8080/db-health"
+    expect:
+      code: 200
+      body:
+        message: "Database connection is healthy"

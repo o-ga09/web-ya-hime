@@ -124,6 +124,50 @@ paths:
                 $ref: '#/components/schemas/Error'
 
   /users/{id}:
+    put:
+      tags:
+        - users
+      summary: ユーザー更新
+      description: 指定されたIDのユーザー情報を更新します
+      operationId: updateUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ユーザーID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveUserRequest'
+      responses:
+        '200':
+          description: ユーザー更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: string
+                    format: uuid
+                    description: 更新されたユーザーのID
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       tags:
         - users
@@ -300,6 +344,50 @@ paths:
                 $ref: '#/components/schemas/Error'
 
   /summaries/{id}:
+    put:
+      tags:
+        - summaries
+      summary: サマリー更新
+      description: 指定されたIDのサマリーを更新します
+      operationId: updateSummary
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: サマリーID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveSummaryRequest'
+      responses:
+        '200':
+          description: サマリー更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary_id:
+                    type: string
+                    format: uuid
+                    description: 更新されたサマリーのID
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       tags:
         - summaries
@@ -423,6 +511,50 @@ paths:
                 $ref: '#/components/schemas/Error'
 
   /categories/{id}:
+    put:
+      tags:
+        - categories
+      summary: カテゴリ更新
+      description: 指定されたIDのカテゴリを更新します
+      operationId: updateCategory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: カテゴリID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveCategoryRequest'
+      responses:
+        '200':
+          description: カテゴリ更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  category_id:
+                    type: string
+                    format: uuid
+                    description: 更新されたカテゴリのID
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       tags:
         - categories
@@ -556,6 +688,50 @@ paths:
                 $ref: '#/components/schemas/Error'
 
   /subcategories/{id}:
+    put:
+      tags:
+        - subcategories
+      summary: サブカテゴリ更新
+      description: 指定されたIDのサブカテゴリを更新します
+      operationId: updateSubcategory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: サブカテゴリID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveSubcategoryRequest'
+      responses:
+        '200':
+          description: サブカテゴリ更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subcategory_id:
+                    type: string
+                    format: uuid
+                    description: 更新されたサブカテゴリのID
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       tags:
         - subcategories
@@ -629,11 +805,6 @@ components:
         - email
         - user_type
       properties:
-        id:
-          type: string
-          format: uuid
-          description: ユーザーID（省略可能。指定しない場合は自動生成されます）
-          example: "123e4567-e89b-12d3-a456-426614174000"
         name:
           type: string
           maxLength: 100
@@ -695,13 +866,7 @@ components:
       required:
         - title
         - content
-        - category
       properties:
-        id:
-          type: string
-          format: uuid
-          description: サマリーID（省略可能。指定しない場合は自動生成されます）
-          example: "123e4567-e89b-12d3-a456-426614174001"
         title:
           type: string
           maxLength: 255
@@ -716,11 +881,6 @@ components:
           type: string
           description: コンテンツ本文
           example: "詳細な内容がここに入ります。"
-        category:
-          type: string
-          maxLength: 100
-          description: 'カテゴリ（例: 雑談、ゲーム（スプラ）、ゲーム（APEX）など）※後方互換性のため残存'
-          example: "雑談"
         category_id:
           type: string
           format: uuid
@@ -763,11 +923,6 @@ components:
           type: string
           description: コンテンツ本文
           example: "詳細な内容がここに入ります。"
-        category:
-          type: string
-          description: カテゴリ（後方互換性のため残存）
-          nullable: true
-          example: "雑談"
         category_obj:
           $ref: '#/components/schemas/Category'
           description: カテゴリオブジェクト
@@ -817,10 +972,6 @@ components:
       required:
         - name
       properties:
-        id:
-          type: string
-          format: uuid
-          description: カテゴリID（省略可能。指定しない場合は自動生成されます）
         name:
           type: string
           maxLength: 100
@@ -870,10 +1021,6 @@ components:
         - category_id
         - name
       properties:
-        id:
-          type: string
-          format: uuid
-          description: サブカテゴリID（省略可能。指定しない場合は自動生成されます）
         category_id:
           type: string
           format: uuid

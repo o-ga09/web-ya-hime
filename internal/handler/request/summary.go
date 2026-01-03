@@ -14,7 +14,6 @@ type SaveSummaryRequest struct {
 	Title         string  `json:"title" validate:"required,max=255"`
 	Description   string  `json:"description" validate:"max=5000"`
 	Content       string  `json:"content" validate:"required"`
-	Category      *string `json:"category" validate:"omitempty,max=100"`
 	CategoryID    *string `json:"category_id" validate:"omitempty"`
 	SubcategoryID *string `json:"subcategory_id" validate:"omitempty"`
 	UserID        string  `json:"user_id"`
@@ -52,7 +51,6 @@ func (s *SaveSummaryRequest) ToModel() *summary.Summary {
 		Title:         s.Title,
 		Description:   s.Description,
 		Content:       s.Content,
-		Category:      nullvalue.PointerToSqlString(s.Category),
 		CategoryID:    nullvalue.PointerToSqlString(s.CategoryID),
 		SubcategoryID: nullvalue.PointerToSqlString(s.SubcategoryID),
 		UserID:        s.UserID,

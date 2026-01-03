@@ -11,7 +11,6 @@ import (
 	"github.com/o-ga09/web-ya-hime/internal/domain"
 	"github.com/o-ga09/web-ya-hime/internal/domain/summary"
 	Ctx "github.com/o-ga09/web-ya-hime/pkg/context"
-	nullvalue "github.com/o-ga09/web-ya-hime/pkg/null_value"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,7 +33,6 @@ func TestSummaryRepository_Save(t *testing.T) {
 				Title:       "Test Title",
 				Description: "Test Description",
 				Content:     "Test Content",
-				Category:    nullvalue.StringToSqlString("雑談"),
 				UserID:      "user-id-1",
 			},
 			mockFn: func(mock sqlmock.Sqlmock) {
@@ -53,7 +51,6 @@ func TestSummaryRepository_Save(t *testing.T) {
 				Title:       "Test Title",
 				Description: "Test Description",
 				Content:     "Test Content",
-				Category:    nullvalue.StringToSqlString("雑談"),
 				UserID:      "user-id-1",
 			},
 			mockFn:  func(mock sqlmock.Sqlmock) {},
@@ -69,7 +66,6 @@ func TestSummaryRepository_Save(t *testing.T) {
 				Title:       "Test Title",
 				Description: "Test Description",
 				Content:     "Test Content",
-				Category:    nullvalue.StringToSqlString("雑談"),
 				UserID:      "user-id-1",
 			},
 			mockFn: func(mock sqlmock.Sqlmock) {

@@ -30,7 +30,7 @@ func New(repo category.ICategoryRepository) ICategoryHandler {
 }
 
 func (h *categoryHandler) Save(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
+	if r.Method != http.MethodPost && r.Method != http.MethodPut {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -44,6 +44,11 @@ func (h *categoryHandler) Save(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := request.Validate(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if r.Method == http.MethodPut && req.ID == "" {
+		http.Error(w, "Category ID is required for update", http.StatusBadRequest)
 		return
 	}
 

@@ -25,8 +25,8 @@ func (s *summaryRepository) Save(ctx context.Context, model *summary.Summary) er
 		return fmt.Errorf("database connection not found in context")
 	}
 
-	query := `INSERT INTO summaries (id, title, description, content, category, category_id, subcategory_id, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`
-	_, err := db.ExecContext(ctx, query, model.ID, model.Title, model.Description, model.Content, model.Category, model.CategoryID, model.SubcategoryID, model.UserID)
+	query := `INSERT INTO summaries (id, title, description, content, category_id, subcategory_id, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`
+	_, err := db.ExecContext(ctx, query, model.ID, model.Title, model.Description, model.Content, model.CategoryID, model.SubcategoryID, model.UserID)
 	if err != nil {
 		return fmt.Errorf("failed to save summary: %w", err)
 	}
@@ -74,7 +74,7 @@ func (s *summaryRepository) List(ctx context.Context, opts summary.ListOptions) 
 	// データ取得
 	query := fmt.Sprintf(`
 		SELECT 
-			s.id, s.title, s.description, s.content, s.category, s.category_id, s.subcategory_id, s.user_id, s.created_at, s.updated_at,
+			s.id, s.title, s.description, s.content, s.category_id, s.subcategory_id, s.user_id, s.created_at, s.updated_at,
 			u.id, u.name, u.email, u.user_type, u.created_at, u.updated_at,
 			c.id, c.name, c.created_at, c.updated_at,
 			sc.id, sc.category_id, sc.name, sc.created_at, sc.updated_at
@@ -104,7 +104,7 @@ func (s *summaryRepository) List(ctx context.Context, opts summary.ListOptions) 
 		var subCreatedAt, subUpdatedAt sql.NullTime
 
 		if err := rows.Scan(
-			&s.ID, &s.Title, &s.Description, &s.Content, &s.Category, &s.CategoryID, &s.SubcategoryID, &s.UserID, &s.CreatedAt, &s.UpdatedAt,
+			&s.ID, &s.Title, &s.Description, &s.Content, &s.CategoryID, &s.SubcategoryID, &s.UserID, &s.CreatedAt, &s.UpdatedAt,
 			&u.ID, &u.Name, &u.Email, &u.UserType, &u.CreatedAt, &u.UpdatedAt,
 			&catID, &catName, &catCreatedAt, &catUpdatedAt,
 			&subID, &subCategoryID, &subName, &subCreatedAt, &subUpdatedAt,
@@ -124,7 +124,7 @@ func (s *summaryRepository) List(ctx context.Context, opts summary.ListOptions) 
 		}
 
 		if catID.Valid {
-			s.CategoryObj = &category.Category{
+			s.Category = &category.Category{
 				WYHBaseModel: domain.WYHBaseModel{
 					ID:        catID.String,
 					CreatedAt: catCreatedAt.Time,
@@ -176,7 +176,7 @@ func (s *summaryRepository) Detail(ctx context.Context, model *summary.Summary) 
 
 	query := `
 		SELECT 
-			s.id, s.title, s.description, s.content, s.category, s.category_id, s.subcategory_id, s.user_id, s.created_at, s.updated_at,
+			s.id, s.title, s.description, s.content, s.category_id, s.subcategory_id, s.user_id, s.created_at, s.updated_at,
 			u.id, u.name, u.email, u.user_type, u.created_at, u.updated_at,
 			c.id, c.name, c.created_at, c.updated_at,
 			sc.id, sc.category_id, sc.name, sc.created_at, sc.updated_at
@@ -199,7 +199,6 @@ func (s *summaryRepository) Detail(ctx context.Context, model *summary.Summary) 
 		&result.Title,
 		&result.Description,
 		&result.Content,
-		&result.Category,
 		&result.CategoryID,
 		&result.SubcategoryID,
 		&result.UserID,
@@ -242,7 +241,7 @@ func (s *summaryRepository) Detail(ctx context.Context, model *summary.Summary) 
 	}
 
 	if catID.Valid {
-		result.CategoryObj = &category.Category{
+		result.Category = &category.Category{
 			WYHBaseModel: domain.WYHBaseModel{
 				ID:        catID.String,
 				CreatedAt: catCreatedAt.Time,
