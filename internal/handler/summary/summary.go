@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/o-ga09/web-ya-hime/internal/domain"
+	"github.com/o-ga09/web-ya-hime/internal/domain/subcategory"
 	"github.com/o-ga09/web-ya-hime/internal/domain/summary"
 	"github.com/o-ga09/web-ya-hime/internal/handler/request"
 	"github.com/o-ga09/web-ya-hime/internal/handler/response"
@@ -20,12 +21,14 @@ type ISummaryHandler interface {
 }
 
 type summaryHandler struct {
-	repo summary.ISummaryRepository
+	repo       summary.ISummaryRepository
+	subcatRepo subcategory.ISubcategoryRepository
 }
 
-func New(repo summary.ISummaryRepository) ISummaryHandler {
+func New(repo summary.ISummaryRepository, subcatRepo subcategory.ISubcategoryRepository) ISummaryHandler {
 	return &summaryHandler{
-		repo: repo,
+		repo:       repo,
+		subcatRepo: subcatRepo,
 	}
 }
 
@@ -46,6 +49,24 @@ func (s *summaryHandler) Save(w http.ResponseWriter, r *http.Request) {
 	if err := request.Validate(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	// カテゴリとサブカテゴリの組み合わせチェック
+	if req.CategoryID != nil && req.SubcategoryID != nil {
+		subcatModel := &subcategory.Subcategory{
+			WYHBaseModel: domain.WYHBaseModel{
+				ID: *req.SubcategoryID,
+			},
+		}
+		subcat, err := s.subcatRepo.Detail(ctx, subcatModel)
+		if err != nil {
+			http.Error(w, "Invalid subcategory", http.StatusBadRequest)
+			return
+		}
+		if subcat.CategoryID != *req.CategoryID {
+			http.Error(w, "Subcategory does not belong to the specified category", http.StatusBadRequest)
+			return
+		}
 	}
 
 	// ドメインモデルに変換
@@ -78,6 +99,7 @@ func (s *summaryHandler) List(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
 	// デフォルト値の設定
 	if req.Limit <= 0 {
 		req.Limit = 20
@@ -92,12 +114,50 @@ func (s *summaryHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	// リポジトリからリストを取得
 	category := ptr.PtrToString(req.Category)
+	categoryID := ptr.PtrToString(req.CategoryID)
+	subcategoryID := ptr.PtrToString(req.SubcategoryID)
+
+	// サブカテゴリのみ指定された場合、サブカテゴリが属するカテゴリで絞り込む
+	if subcategoryID != "" && categoryID == "" {
+		subcatModel := &subcategory.Subcategory{
+			WYHBaseModel: domain.WYHBaseModel{
+				ID: subcategoryID,
+			},
+		}
+		subcat, err := s.subcatRepo.Detail(ctx, subcatModel)
+		if err != nil {
+			http.Error(w, "Invalid subcategory", http.StatusBadRequest)
+			return
+		}
+		categoryID = subcat.CategoryID
+	}
+
+	// カテゴリとサブカテゴリの組み合わせチェック
+	if categoryID != "" && subcategoryID != "" {
+		subcatModel := &subcategory.Subcategory{
+			WYHBaseModel: domain.WYHBaseModel{
+				ID: subcategoryID,
+			},
+		}
+		subcat, err := s.subcatRepo.Detail(ctx, subcatModel)
+		if err != nil {
+			http.Error(w, "Invalid subcategory", http.StatusBadRequest)
+			return
+		}
+		if subcat.CategoryID != categoryID {
+			http.Error(w, "Subcategory does not belong to the specified category", http.StatusBadRequest)
+			return
+		}
+	}
 
 	opts := summary.ListOptions{
-		Category: category,
-		Limit:    req.Limit,
-		Offset:   req.Offset,
+		Category:      category,
+		CategoryID:    categoryID,
+		SubcategoryID: subcategoryID,
+		Limit:         req.Limit,
+		Offset:        req.Offset,
 	}
+
 	result, err := s.repo.List(ctx, opts)
 	if err != nil {
 		logger.Error(ctx, "error", err)
@@ -150,8 +210,8 @@ func (s *summaryHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// レスポンスを返す
-	httputil.Response(&w, http.StatusOK, response.ToSummaryResponse(detail))
+	res := response.ToSummaryResponse(detail)
+	httputil.Response(&w, http.StatusOK, res)
 }
 
 func (s *summaryHandler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -164,7 +224,6 @@ func (s *summaryHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var req request.DeleteSummaryRequest
-	// リクエスト構造体を作成してバリデーション
 	if err := request.Bind(r, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -174,19 +233,18 @@ func (s *summaryHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ドメインモデルに変換
 	model := &summary.Summary{
 		WYHBaseModel: domain.WYHBaseModel{
 			ID: req.ID,
 		},
 	}
 
-	// リポジトリから削除
 	if err := s.repo.Delete(ctx, model); err != nil {
 		http.Error(w, "Failed to delete summary", http.StatusInternalServerError)
 		return
 	}
 
-	// レスポンスを返す
-	httputil.Response(&w, http.StatusNoContent)
+	httputil.Response(&w, http.StatusNoContent, map[string]string{
+		"message": "Summary deleted successfully",
+	})
 }

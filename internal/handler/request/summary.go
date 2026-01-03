@@ -10,19 +10,22 @@ import (
 
 // SaveSummaryRequest は保存リクエストの構造体
 type SaveSummaryRequest struct {
-	ID          *string `json:"id,omitempty"`
-	Title       string  `json:"title" validate:"required,max=255"`
-	Description string  `json:"description" validate:"max=5000"`
-	Content     string  `json:"content" validate:"required"`
-	Category    *string `json:"category" validate:"omitempty,max=100"`
-	UserID      string  `json:"user_id"`
+	ID            *string `json:"id,omitempty"`
+	Title         string  `json:"title" validate:"required,max=255"`
+	Description   string  `json:"description" validate:"max=5000"`
+	Content       string  `json:"content" validate:"required"`
+	CategoryID    *string `json:"category_id" validate:"omitempty"`
+	SubcategoryID *string `json:"subcategory_id" validate:"omitempty"`
+	UserID        string  `json:"user_id"`
 }
 
 // ListSummaryRequest はリスト取得リクエストの構造体
 type ListSummaryRequest struct {
-	Category *string `query:"category"`
-	Limit    int     `query:"limit" validate:"min=1,max=100"`
-	Offset   int     `query:"offset" validate:"min=0"`
+	Category      *string `query:"category"`
+	CategoryID    *string `query:"category_id"`
+	SubcategoryID *string `query:"subcategory_id"`
+	Limit         int     `query:"limit" validate:"min=1,max=100"`
+	Offset        int     `query:"offset" validate:"min=0"`
 }
 
 // DetailSummaryRequest は詳細取得リクエストの構造体
@@ -45,10 +48,11 @@ func (s *SaveSummaryRequest) ToModel() *summary.Summary {
 		WYHBaseModel: domain.WYHBaseModel{
 			ID: id,
 		},
-		Title:       s.Title,
-		Description: s.Description,
-		Content:     s.Content,
-		Category:    nullvalue.PointerToSqlString(s.Category),
-		UserID:      s.UserID,
+		Title:         s.Title,
+		Description:   s.Description,
+		Content:       s.Content,
+		CategoryID:    nullvalue.PointerToSqlString(s.CategoryID),
+		SubcategoryID: nullvalue.PointerToSqlString(s.SubcategoryID),
+		UserID:        s.UserID,
 	}
 }

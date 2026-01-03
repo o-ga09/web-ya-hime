@@ -3,7 +3,6 @@ package summary
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/o-ga09/web-ya-hime/internal/domain"
+	"github.com/o-ga09/web-ya-hime/internal/domain/subcategory"
 	"github.com/o-ga09/web-ya-hime/internal/domain/summary"
 	"github.com/o-ga09/web-ya-hime/internal/domain/user"
 	"github.com/stretchr/testify/assert"
@@ -45,6 +45,37 @@ func (m *MockSummaryRepository) Detail(ctx context.Context, model *summary.Summa
 }
 
 func (m *MockSummaryRepository) Delete(ctx context.Context, model *summary.Summary) error {
+	args := m.Called(ctx, model)
+	return args.Error(0)
+}
+
+// MockSubcategoryRepository はsubcategory.ISubcategoryRepositoryのモック
+type MockSubcategoryRepository struct {
+	mock.Mock
+}
+
+func (m *MockSubcategoryRepository) Save(ctx context.Context, model *subcategory.Subcategory) error {
+	args := m.Called(ctx, model)
+	return args.Error(0)
+}
+
+func (m *MockSubcategoryRepository) List(ctx context.Context, categoryID string) (subcategory.SubcategorySlice, error) {
+	args := m.Called(ctx, categoryID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(subcategory.SubcategorySlice), args.Error(1)
+}
+
+func (m *MockSubcategoryRepository) Detail(ctx context.Context, model *subcategory.Subcategory) (*subcategory.Subcategory, error) {
+	args := m.Called(ctx, model)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*subcategory.Subcategory), args.Error(1)
+}
+
+func (m *MockSubcategoryRepository) Delete(ctx context.Context, model *subcategory.Subcategory) error {
 	args := m.Called(ctx, model)
 	return args.Error(0)
 }
@@ -125,9 +156,10 @@ func TestSummaryHandler_Save(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := new(MockSummaryRepository)
+			mockSubcatRepo := new(MockSubcategoryRepository)
 			tt.mockSetup(mockRepo)
 
-			handler := New(mockRepo)
+			handler := New(mockRepo, mockSubcatRepo)
 
 			bodyBytes, _ := json.Marshal(tt.body)
 			req := httptest.NewRequest(tt.method, "/summaries", bytes.NewBuffer(bodyBytes))
@@ -171,7 +203,6 @@ func TestSummaryHandler_List(t *testing.T) {
 						Title:       "Title 1",
 						Description: "Description 1",
 						Content:     "Content 1",
-						Category:    sql.NullString{String: "雑談", Valid: true},
 						UserID:      "user-1",
 						User: &user.User{
 							WYHBaseModel: domain.WYHBaseModel{
@@ -244,9 +275,10 @@ func TestSummaryHandler_List(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := new(MockSummaryRepository)
+			mockSubcatRepo := new(MockSubcategoryRepository)
 			tt.mockSetup(mockRepo)
 
-			handler := New(mockRepo)
+			handler := New(mockRepo, mockSubcatRepo)
 
 			req := httptest.NewRequest(tt.method, "/summaries", nil)
 			w := httptest.NewRecorder()
@@ -344,9 +376,10 @@ func TestSummaryHandler_Detail(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := new(MockSummaryRepository)
+			mockSubcatRepo := new(MockSubcategoryRepository)
 			tt.mockSetup(mockRepo)
 
-			handler := New(mockRepo)
+			handler := New(mockRepo, mockSubcatRepo)
 
 			// パスパラメータをシミュレートするために、Go 1.22の新しいルーティングを使用
 			url := "/summaries/{id}"
@@ -417,9 +450,10 @@ func TestSummaryHandler_Delete(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := new(MockSummaryRepository)
+			mockSubcatRepo := new(MockSubcategoryRepository)
 			tt.mockSetup(mockRepo)
 
-			handler := New(mockRepo)
+			handler := New(mockRepo, mockSubcatRepo)
 
 			// パスパラメータをシミュレートするために、Go 1.22の新しいルーティングを使用
 			url := "/summaries/{id}"

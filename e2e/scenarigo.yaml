@@ -1,0 +1,4 @@
+schemaVersion: config/v1
+
+# プラグイン設定（必要に応じて）
+plugins: {}

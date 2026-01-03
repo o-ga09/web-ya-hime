@@ -52,3 +52,7 @@ build:
 
 .PHONY: check
 check: lint test test-coverage migrate-up seed build up down
+
+.PHONY: e2e-test
+e2e-test:
+	cd e2e && scenarigo run scenarios

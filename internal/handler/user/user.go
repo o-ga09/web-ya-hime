@@ -45,6 +45,11 @@ func (u *userHandler) Save(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.Method == http.MethodPut && req.ID == nil {
+		http.Error(w, "User ID is required for update", http.StatusBadRequest)
+		return
+	}
+
 	// ドメインモデルに変換
 	model := req.ToModel()
 

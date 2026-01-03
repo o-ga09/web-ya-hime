@@ -1,0 +1,145 @@
+title: サマリー管理APIテスト（カテゴリフィルタ含む）
+vars:
+  userID: ""
+  categoryID: ""
+  subcategoryID: ""
+  summaryID: ""
+
+steps:
+  # セットアップ: ユーザー取得（既存のシードデータを利用）
+  - title: テストユーザーを取得
+    protocol: http
+    request:
+      method: GET
+      url: "http://localhost:8080/users?email=yamada@example.com"
+    expect:
+      code: 200
+    bind:
+      vars:
+        userID: "{{response.body.users[0].id}}"
+
+  # セットアップ: カテゴリ作成
+  - title: カテゴリを作成
+    protocol: http
+    request:
+      method: POST
+      url: "http://localhost:8080/categories"
+      header:
+        Content-Type: application/json
+      body:
+        name: "E2E-サマリーテスト技術"
+    expect:
+      code: 200
+    bind:
+      vars:
+        categoryID: "{{response.body.category_id}}"
+
+  # セットアップ: サブカテゴリ作成
+  - title: サブカテゴリを作成
+    protocol: http
+    request:
+      method: POST
+      url: "http://localhost:8080/subcategories"
+      header:
+        Content-Type: application/json
+      body:
+        category_id: "{{vars.categoryID}}"
+        name: "E2E-プログラミング"
+    expect:
+      code: 200
+    bind:
+      vars:
+        subcategoryID: "{{response.body.subcategory_id}}"
+
+  # サマリー作成（カテゴリ・サブカテゴリ指定）
+  - title: サマリーを作成（カテゴリとサブカテゴリ指定）
+    protocol: http
+    request:
+      method: POST
+      url: "http://localhost:8080/summaries"
+      header:
+        Content-Type: application/json
+      body:
+        title: "Go言語入門"
+        description: "Go言語の基本"
+        content: "Go言語はシンプルで高速な言語です"
+        category: "技術"
+        category_id: "{{vars.categoryID}}"
+        subcategory_id: "{{vars.subcategoryID}}"
+        user_id: "{{vars.userID}}"
+    expect:
+      code: 200
+    bind:
+      vars:
+        summaryID: "{{response.body.summary_id}}"
+
+  # サマリー一覧取得（フィルタなし）
+  - title: サマリー一覧を取得
+    protocol: http
+    request:
+      method: GET
+      url: "http://localhost:8080/summaries"
+    expect:
+      code: 200
+
+  # サマリー一覧取得（カテゴリIDでフィルタ）
+  - title: サマリー一覧を取得（カテゴリIDでフィルタ）
+    protocol: http
+    request:
+      method: GET
+      url: "http://localhost:8080/summaries?category_id={{vars.categoryID}}"
+    expect:
+      code: 200
+
+  # サマリー一覧取得（サブカテゴリIDでフィルタ）
+  - title: サマリー一覧を取得（サブカテゴリIDでフィルタ）
+    protocol: http
+    request:
+      method: GET
+      url: "http://localhost:8080/summaries?subcategory_id={{vars.subcategoryID}}"
+    expect:
+      code: 200
+
+  # サマリー詳細取得
+  - title: サマリー詳細を取得
+    protocol: http
+    request:
+      method: GET
+      url: "http://localhost:8080/summaries/{{vars.summaryID}}"
+    expect:
+      code: 200
+      body:
+        id: "{{vars.summaryID}}"
+        title: "Go言語入門"
+        category:
+          id: "{{vars.categoryID}}"
+          name: "E2E-サマリーテスト技術"
+        subcategory:
+          id: "{{vars.subcategoryID}}"
+          category_id: "{{vars.categoryID}}"
+          name: "E2E-プログラミング"
+
+  # クリーンアップ
+  - title: サマリーを削除
+    protocol: http
+    request:
+      method: DELETE
+      url: "http://localhost:8080/summaries/{{vars.summaryID}}"
+    expect:
+      code: 204
+
+  - title: サブカテゴリを削除
+    protocol: http
+    request:
+      method: DELETE
+      url: "http://localhost:8080/subcategories/{{vars.subcategoryID}}"
+    expect:
+      code: 200
+
+  - title: カテゴリを削除
+    protocol: http
+    request:
+      method: DELETE
+      url: "http://localhost:8080/categories/{{vars.categoryID}}"
+    expect:
+      code: 200
