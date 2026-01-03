@@ -21,11 +21,11 @@ type ListOptions struct {
 }
 
 type ListResult struct {
-	Items      SummarySlice `json:"items"`
-	Total      int          `json:"total"`
-	Limit      int          `json:"limit"`
-	Offset     int          `json:"offset"`
-	HasNext    bool         `json:"has_next"`
+	Items   SummarySlice `json:"items"`
+	Total   int          `json:"total"`
+	Limit   int          `json:"limit"`
+	Offset  int          `json:"offset"`
+	HasNext bool         `json:"has_next"`
 }
 
 type Summary struct {
